@@ -4,10 +4,10 @@
 
 
 This repo is still under construction: 
-[ ] UHC eval code runnable.
-[ ] UHC training code runnable.
-[ ] Kin-poly eval code runnable.
-[ ] UHC training code runnable.
+- [x] UHC eval code runnable.
+- [ ] UHC training code runnable.
+- [ ] Kin-poly eval code runnable.
+- [ ] UHC training code runnable.
 
 ## Introduction
 
