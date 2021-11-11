@@ -3,6 +3,12 @@
 [[paper]](https://arxiv.org/abs/2106.05969) [[website]](https://zhengyiluo.github.io/projects/kin_poly/) [[Video]](https://www.youtube.com/watch?v=yEiK9K1N-zw)
 
 
+This repo is still under construction: 
+[ ] UHC eval code runnable.
+[ ] UHC training code runnable.
+[ ] Kin-poly eval code runnable.
+[ ] UHC training code runnable.
+
 ## Introduction
 
 In this project, we demonstrate the ability to estimate 3D human pose and human-object interactions from egocentric videos. This code base contains all the necessary files to train and reproduce the results reported in our paper, and contain configuration files and hyperparameters used in our experiments. Some training data (namely, [AMASS](https://amass.is.tue.mpg.de/)) and external library ([Mujoco](http://www.mujoco.org/)) may require additional licence to obtain, and this codebase contains data processing scripts to process these data once obtained. 
