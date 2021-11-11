@@ -49,10 +49,10 @@ reward_weights:
 
 data_specs:
   dataset_name: amass
-  file_path: /insert_directory_here/amass_copycat_take4.pkl
-  state_file_path: /insert_directory_here/amass_copycat_take3_states.pkl
-  test_file_path: /insert_directory_here/h36m_train_no_sit_30_qpos.pkl
-  neutral_path: /insert_directory_here/standing_neutral.pkl
+  file_path: sample_data/h36m_test.pkl
+  # state_file_path: /insert_directory_here/amass_copycat_take3_states.pkl
+  test_file_path: sample_data/h36m_test.pkl
+  neutral_path: sample_data/standing_neutral.pkl
   flip_cnd: 0
   has_smpl_root: true
   traj_dim: 144

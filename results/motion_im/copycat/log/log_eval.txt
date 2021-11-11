@@ -1,0 +1,2 @@
+[2021-11-11 13:02:25,506] loading model from checkpoint: results/motion_im/copycat/models/iter_10000.p
+[2021-11-11 13:06:13,171] loading model from checkpoint: results/motion_im/copycat/models/iter_10000.p
