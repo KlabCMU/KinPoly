@@ -1,5 +1,8 @@
 # Dynamics-Regulated Kinematic Policy for Egocentric Pose Estimation
 
+[[paper]](https://arxiv.org/abs/2106.05969) [[website]](https://zhengyiluo.github.io/projects/kin_poly/) [[Video]](https://www.youtube.com/watch?v=yEiK9K1N-zw)
+
+
 ## Introduction
 
 In this project, we demonstrate the ability to estimate 3D human pose and human-object interactions from egocentric videos. This code base contains all the necessary files to train and reproduce the results reported in our paper, and contain configuration files and hyperparameters used in our experiments. Some training data (namely, [AMASS](https://amass.is.tue.mpg.de/)) and external library ([Mujoco](http://www.mujoco.org/)) may require additional licence to obtain, and this codebase contains data processing scripts to process these data once obtained. 
@@ -73,4 +76,4 @@ python scripts/eval_copycat.py --cfg copycat --iter 10000
 
 ## Licence
 
-* NeurIPS 2021 Submission ID: 79. FOR ANONYMOUS REVIEW ONLY. DO NOT DISTRIBUTE. ALL RIGHTS RESERVED.
+To be updated. 
