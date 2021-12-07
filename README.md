@@ -9,6 +9,17 @@ This repo is still under construction:
 - [ ] Kin-poly eval code runnable.
 - [ ] UHC training code runnable.
 
+## Citation
+If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
+```
+@inproceedings{Luo2021DynamicsRegulatedKP,
+  title={Dynamics-Regulated Kinematic Policy for Egocentric Pose Estimation},
+  author={Zhengyi Luo and Ryo Hachiuma and Ye Yuan and Kris Kitani},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2021}
+}
+```
+
 ## Introduction
 
 In this project, we demonstrate the ability to estimate 3D human pose and human-object interactions from egocentric videos. This code base contains all the necessary files to train and reproduce the results reported in our paper, and contain configuration files and hyperparameters used in our experiments. Some training data (namely, [AMASS](https://amass.is.tue.mpg.de/)) and external library ([Mujoco](http://www.mujoco.org/)) may require additional licence to obtain, and this codebase contains data processing scripts to process these data once obtained. 
