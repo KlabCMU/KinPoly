@@ -1,4 +1,4 @@
-dataset_path: "/insert_directory_here/"
+dataset_path: "sample_data/"
 meta_id: mocap_meta
 data_file: mocap_annotations
 of_file: mocap_img_feats

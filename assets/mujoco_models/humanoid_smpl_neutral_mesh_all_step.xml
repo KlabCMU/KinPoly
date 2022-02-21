@@ -21,7 +21,7 @@
     <mesh file="./geom/L_Hip.stl"/>
     <mesh file="./geom/R_Hip.stl"/>
     <mesh file="./geom/Torso.stl"/>
-    <mesh file="./geom/L_Knee.stl"/>
+    <mesh file="./ge om/L_Knee.stl"/>
     <mesh file="./geom/R_Knee.stl"/>
     <mesh file="./geom/Spine.stl"/>
     <mesh file="./geom/L_Ankle.stl"/>

@@ -19,16 +19,12 @@ from relive.utils import *
 from relive.utils.compute_loss import DeepMimicLoss, TrajLoss
 from relive.models.mlp import MLP
 from relive.models.traj_ar_smpl_net import TrajARNet
-from relive.models.traj_ar_smpl_3rd_net import TrajARNet3Rd
 from relive.data_loaders.statear_smpl_dataset import StateARDataset
-from relive.data_loaders.state_ar_3_dataset import StateARDataset as StateAR3RdDataset
 from relive.utils.torch_humanoid import Humanoid
-from relive.envs.humanoid_v2 import HumanoidEnv
 from relive.utils.egomimic_config import Config as EgoConfig
 from relive.data_process.process_trajs import get_expert
 from relive.utils.torch_ext import get_scheduler
 from relive.utils.statear_smpl_config import Config
-from relive.utils.arnet_3_config import Config as Config_3rd
 from torch.multiprocessing import Pool, Process, set_start_method
 # from multiprocessing import Pool
 
@@ -110,10 +106,7 @@ if __name__ == "__main__":
 
     """networks"""
     state_dim = dataset.traj_dim
-    if args.perspective == "first":
-        traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = args.mode)
-    else:
-        traj_ar_net = TrajARNet3Rd(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = args.mode)
+    traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = args.mode)
 
         
     if args.iter > 0:
