@@ -38,6 +38,12 @@ The datasets we use for training and evaluating our method can be found here:
 
 The folders contain the a data file that contains the pre-computed object pose and camera trajectory; another data file contains the pre-computed image features; a meta file is also included for loading the respective datasets.
 
+To download the Mocap dataset, run the following script: 
+
+```
+bash download_data.sh
+```
+
 ## Important files
 
 * ```relive/models/traj_ar_smpl_net.py```:  definition of our kinematic model's network.
