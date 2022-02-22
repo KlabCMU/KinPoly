@@ -1,3 +1,10 @@
+import glob
+import os
+import sys
+import pdb
+import os.path as osp
+sys.path.append(os.getcwd())
+
 from torch import nn
 from collections import defaultdict
 import joblib
@@ -72,7 +79,8 @@ class TrajARNet(nn.Module):
         self.pose_start = 7
 
         # Netural data
-        self.netural_data = joblib.load("/insert_directory_here/standing_neutral.pkl")
+        
+        self.netural_data = joblib.load(osp.join(cfg.data_dir, "standing_neutral.pkl"))
         fk_res = self.fk_model.qpos_fk(torch.from_numpy(self.netural_data['qpos'][None, ]).to(device).type(dtype))
         fk_res['qvel'] = (torch.from_numpy(self.netural_data['qvel']).to(device).type(dtype))
         self.netural_target = fk_res

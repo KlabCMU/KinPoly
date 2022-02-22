@@ -15,8 +15,6 @@ from tqdm import tqdm
 import joblib
 import yaml
 
-from relive.envs.humanoid_v2 import HumanoidEnv
-from relive.data_loaders.statereg_dataset import Dataset
 from relive.utils.egomimic_config import Config as EgoConfig
 from relive.utils import get_qvel_fd, de_heading
 from relive.utils.torch_humanoid import Humanoid
