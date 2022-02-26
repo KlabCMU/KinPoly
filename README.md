@@ -6,7 +6,7 @@
 This repo is still under construction: 
 - [x] UHC eval code runnable.
 - [ ] UHC training code runnable.
-- [ ] Kin-poly training (Supervised) code runnable.
+- [x] Kin-poly training (Supervised) code runnable.
 - [ ] Kin-poly training (RL + Supervised) code runnable.
 - [ ] Kin-poly eval code runnable.
 
