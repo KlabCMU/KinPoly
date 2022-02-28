@@ -17,6 +17,7 @@ results
 *.so
 *.pyc
 *.so
+*.pyc
 
 # Packages #
 ############

@@ -28,8 +28,6 @@ from tqdm import tqdm
 from relive.utils import *
 from relive.utils.compute_loss import DeepMimicLoss, TrajLoss
 from relive.models.mlp import MLP
-from relive.models.traj_ar_net import TrajARNet
-from relive.data_loaders.statenet_torch_dataset import StatenetDataset
 from relive.utils.torch_humanoid import Humanoid
 from relive.utils.flags import flags
 

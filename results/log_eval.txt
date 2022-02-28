@@ -1,0 +1,1 @@
+[2022-02-27 20:38:20,284] root_dist:1.818 	 mpjpe:240.460 	 head_dist:2.135 	 accel_dist:52.130 	 slide_pred:13.903 	 pen_pred:54.205 	 succ:0.600 	 vel_dist:13.009 	 pen_gt:11.809 	 slide_gt:2.315 	 --kin_poly_wo_action | 1000 | statear | wild? False

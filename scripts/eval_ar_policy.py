@@ -268,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('--cfg', default=None)
     parser.add_argument('--iter', type=int, default=-1)
     parser.add_argument('--ar_iter', type=int, default=-1)
-    parser.add_argument('--cc_cfg', type=str, default="copycat_9_1")
+    parser.add_argument('--cc_cfg', type=str, default="copycat")
     parser.add_argument('--cc_iter', type=int, default=-1)
     parser.add_argument('--mode', type=str, default='vis')
     parser.add_argument('--input', action='store_true', default=False)
@@ -290,18 +290,19 @@ if __name__ == "__main__":
 
     flags.debug = args.debug
         
-    cc_cfg = CC_Config(args.cc_cfg, "/insert_directory_here//", create_dirs=False)
+    cc_cfg = CC_Config(args.cc_cfg, "", create_dirs=False, mujoco_path = "assets/mujoco_models/%s.xml")
     if args.wild:
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
     else:
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all_step.xml"
         
-    cfg = Config(args.action, args.cfg, create_dirs=(args.iter == 0), wild = args.wild,  mujoco_path = "%s.xml")
+    cfg = Config(args.action, args.cfg, create_dirs=(args.iter == 0), wild = args.wild,  mujoco_path = "assets/mujoco_models/%s.xml")
     np.random.seed(1)
 
     # print(cfg.takes)
 
     """make and seed env"""
+    import ipdb; ipdb.set_trace()
     model = load_model_from_path(cc_cfg.mujoco_model_file)
     # if args.mode != "stats" :
         # sim = MjSim(model)

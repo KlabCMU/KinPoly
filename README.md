@@ -6,8 +6,20 @@
 This repo is still under construction: 
 - [x] UHC eval code runnable.
 - [ ] UHC training code runnable.
+- [x] Kin-poly training (Supervised) code runnable.
+- [ ] Kin-poly training (RL + Supervised) code runnable.
 - [ ] Kin-poly eval code runnable.
-- [ ] UHC training code runnable.
+
+## Citation
+If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
+```
+@inproceedings{Luo2021DynamicsRegulatedKP,
+  title={Dynamics-Regulated Kinematic Policy for Egocentric Pose Estimation},
+  author={Zhengyi Luo and Ryo Hachiuma and Ye Yuan and Kris Kitani},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2021}
+}
+```
 
 ## Introduction
 
@@ -26,6 +38,12 @@ The datasets we use for training and evaluating our method can be found here:
 [[Real-world dataset](https://drive.google.com/drive/folders/1BBjPmjrm-FZLMw24Gsbl4CsodGgfsptY?usp=sharing)][[MoCap dataset](https://drive.google.com/drive/folders/1Mw1LQBNfor8a7Diw3eHLO--ZnREw57kB?usp=sharing)]
 
 The folders contain the a data file that contains the pre-computed object pose and camera trajectory; another data file contains the pre-computed image features; a meta file is also included for loading the respective datasets.
+
+To download the Mocap dataset, run the following script: 
+
+```
+bash download_data.sh
+```
 
 ## Important files
 
@@ -48,7 +66,7 @@ python scripts/train_ar_policy.py --cfg kin_poly  --num_threads 35
 To train our kinematic policy using only supervised learning, use the command:
 
 ```
-python scripts/exp_arnet_all.py.py --cfg kin_poly  
+python scripts/exp_arnet_all.py --cfg kin_poly  
 ```
 
 To train our universal humanoid controller, use the command:
