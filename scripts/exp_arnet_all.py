@@ -59,8 +59,8 @@ def eval_sequences(cur_jobs):
             results[seq_key] = data_acc
             # results["pesudo_expert"][seq_key] = get_expert(results["traj_pred"][seq_key], 0, results["traj_pred"][seq_key].shape[0], cfg=cfg, env=env)
             counter += 1
-            if counter > 10:
-                break
+            # if counter > 1:
+            #     break
     return results
     
     
@@ -80,12 +80,9 @@ if __name__ == "__main__":
     if args.data is None:
         args.data = args.mode if args.mode in {'train', 'test'} else 'train'
 
-    if args.perspective == "first":
-        cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml")
-        dataset = StateARDataset(cfg, args.data)
-    else:
-        cfg = Config_3rd(args.cfg, create_dirs=(args.iter == 0), mujoco_path = "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml")
-        dataset = StateAR3RdDataset(cfg, args.data)
+    cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml")
+    dataset = StateARDataset(cfg, args.data)
+
 
     """setup"""
     dtype = torch.float64
@@ -181,23 +178,23 @@ if __name__ == "__main__":
         traj_ar_net.set_schedule_sampling(0)
 
         jobs = list(dataset.iter_data().items())
-        data_res_full = eval_sequences(jobs)
-        num_jobs = 5
+        # data_res_full = eval_sequences(jobs)
 
-        # chunk = np.ceil(len(jobs)/num_jobs).astype(int)
-        # jobs= [jobs[i:i + chunk] for i in range(0, len(jobs), chunk)]
-        # job_args = [(jobs[i],) for i in range(len(jobs))]
-        # print(len(job_args))
-        # data_res_full = {}
-        # with torch.no_grad():
-        #     try:
-        #         pool = Pool(num_jobs)   # multi-processing
-        #         job_res = pool.starmap(eval_sequences, job_args)
-        #     except KeyboardInterrupt:
-        #         pool.terminate()
-        #         pool.join()
+        num_jobs = 5
+        chunk = np.ceil(len(jobs)/num_jobs).astype(int)
+        jobs= [jobs[i:i + chunk] for i in range(0, len(jobs), chunk)]
+        job_args = [(jobs[i],) for i in range(len(jobs))]
+        print(len(job_args))
+        data_res_full = {}
+        with torch.no_grad():
+            try:
+                pool = Pool(num_jobs)   # multi-processing
+                job_res = pool.starmap(eval_sequences, job_args)
+            except KeyboardInterrupt:
+                pool.terminate()
+                pool.join()
         
-        # [data_res_full.update(j) for j in job_res]
+        [data_res_full.update(j) for j in job_res]
         
         res_path = '%s/iter_%04d_%s_%s.p' % (cfg.result_dir, args.iter, args.data, cfg.data_file)
         print(f"results dir: {res_path}")
@@ -209,3 +206,5 @@ if __name__ == "__main__":
         else:
             os.system(f"python scripts/eval_pose_all.py --cfg {args.cfg} --iter {args.iter} --mode stats")
             os.system(f"python scripts/eval_pose_all.py --cfg {args.cfg} --iter {args.iter} --mode vis")
+
+            

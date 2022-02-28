@@ -6,7 +6,6 @@ import os
 import sys
 import pdb
 import os.path as osp
-sys.path.append(os.getcwd())
 import pickle
 import math
 import time
@@ -22,7 +21,6 @@ from relive.envs.visual.humanoid_vis import HumanoidVisEnv
 from mujoco_py import load_model_from_path, MjSim
 from relive.utils.statear_smpl_config import Config
 from tqdm import tqdm
-
 
 from copycat.envs.humanoid_im import HumanoidEnv as CC_HumanoidEnv
 from copycat.utils.config import Config as CC_Config
@@ -536,9 +534,7 @@ class ReliveVisulizer(Visualizer):
 def norm_qpos(qpos):
     qpos_norm = qpos.copy()
     qpos_norm[:, 3:7] /= np.linalg.norm(qpos_norm[:, 3:7], axis=1)[:, None]
-
     return qpos_norm
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -554,9 +550,8 @@ if __name__ == "__main__":
 
     logger = create_logger(os.path.join("results", 'log_eval.txt'))
 
-    cc_cfg = CC_Config("copycat_9", "/insert_directory_here//", create_dirs=False)
+    cc_cfg = CC_Config("copycat", "", create_dirs=False)
 
-    cc_cfg.data_specs['test_file_path'] = "/insert_directory_here/h36m_train_no_sit_30_qpos.pkl"
     if args.wild:
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
     else:
@@ -582,9 +577,9 @@ if __name__ == "__main__":
     # sr_res_path = 'results/%s/%s/%s/results/iter_%04d_%s.p' % (args.action, args.algo, args.cfg, args.iter, args.data)
 
     if args.wild:
-        all_data = joblib.load("/insert_directory_here/features/traj_wild_smpl.p")
+        all_data = joblib.load("sample_data/features/traj_wild_smpl.p")
     else:
-        all_data = joblib.load("/insert_directory_here/features/expert_smpl_all_all.p")
+        all_data = joblib.load("sample_data/features/mocap_annotations.p")
     
     
     if args.algo == "posereg":
@@ -636,7 +631,6 @@ if __name__ == "__main__":
             sr_res_path = 'results/all/%s/%s/results/iter_%04d_%s_%s.p' % ( args.algo, args.cfg, args.iter, args.data, cfg.data_file)
         else:
             sr_res_path = 'results/all/%s/%s/results/iter_%04d_%s_%s.p' % ( args.algo, args.cfg, args.iter, args.data, cfg.data_file)
-        sr_res_path = "results/all/arnet_3rd/arnet_2/results/iter_0980_train_h36m_train_30_expert.p"
 
         sr_res_load = pickle.load(open(sr_res_path, 'rb')) if args.cfg is not None else (None, None)
         sr_res = {}
@@ -646,17 +640,6 @@ if __name__ == "__main__":
                 sr_res[k]['head_pose_gt'] = all_data[k]['head_pose']
             else:
                 print(k, "data removed")
-
-    elif args.algo == "3rd":
-        sr_res_path = "results/all/arnet_3rd/arnet_2/results/iter_0980_train_h36m_train_30_expert.p"
-
-        sr_res_load = pickle.load(open(sr_res_path, 'rb')) if args.cfg is not None else (None, None)
-        sr_res = {}
-
-        for k, v in tqdm(sr_res_load.items()):
-            sr_res[k] = v
-                
-        
 
     elif args.algo == "ours":
         sr_res = defaultdict(dict)

@@ -66,7 +66,7 @@ python scripts/train_ar_policy.py --cfg kin_poly  --num_threads 35
 To train our kinematic policy using only supervised learning, use the command:
 
 ```
-python scripts/exp_arnet_all.py.py --cfg kin_poly  
+python scripts/exp_arnet_all.py --cfg kin_poly  
 ```
 
 To train our universal humanoid controller, use the command:
