@@ -5,7 +5,6 @@ import torch
 import numpy as np
 import os.path as osp
 from smplx import SMPL as _SMPL
-from smplx.body_models import ModelOutput
 from smplx.lbs import vertices2joints
 
 SMPL_BONE_NAMES = ['Pelvis', 'L_Hip', 'R_Hip', 'Torso', 'L_Knee', 'R_Knee', 'Spine', 'L_Ankle', 'R_Ankle', 'Chest', 'L_Toe', 'R_Toe', 'Neck', 
