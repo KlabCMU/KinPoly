@@ -16,7 +16,7 @@ use_of: false
 use_head: true
 use_action: true
 use_vel: false
-use_context: true
+use_context: false
 
 model_specs:
   model_v: 0
