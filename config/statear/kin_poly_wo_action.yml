@@ -87,7 +87,7 @@ policy_specs:
 
 lr: 5.e-4
 weightdecay: 0.0
-num_epoch: 2000
+num_epoch: 4000
 num_epoch_fix: 100
 num_sample: 2000
 batch_size: 256

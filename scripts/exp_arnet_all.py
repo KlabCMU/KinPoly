@@ -60,7 +60,7 @@ def eval_sequences(cur_jobs):
             # results["pesudo_expert"][seq_key] = get_expert(results["traj_pred"][seq_key], 0, results["traj_pred"][seq_key].shape[0], cfg=cfg, env=env)
             counter += 1
             # if counter > 1:
-            #     break
+                # break
     return results
     
     
@@ -201,10 +201,10 @@ if __name__ == "__main__":
         pickle.dump(data_res_full, open(res_path, 'wb'))
 
         if args.wild:
-            os.system(f"python scripts/eval_pose_all.py --cfg {args.cfg} --iter {args.iter} --mode stats --wild")
-            os.system(f"python scripts/eval_pose_all.py --cfg {args.cfg} --iter {args.iter} --mode vis --wild")
+            os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode stats --wild")
+            os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode vis --wild")
         else:
-            os.system(f"python scripts/eval_pose_all.py --cfg {args.cfg} --iter {args.iter} --mode stats")
-            os.system(f"python scripts/eval_pose_all.py --cfg {args.cfg} --iter {args.iter} --mode vis")
+            os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode stats")
+            os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode vis")
 
             

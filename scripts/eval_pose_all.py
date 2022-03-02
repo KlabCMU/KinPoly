@@ -635,6 +635,7 @@ if __name__ == "__main__":
         sr_res_load = pickle.load(open(sr_res_path, 'rb')) if args.cfg is not None else (None, None)
         sr_res = {}
         for k, v in tqdm(sr_res_load.items()):
+            
             if k in all_data:
                 sr_res[k] = v
                 sr_res[k]['head_pose_gt'] = all_data[k]['head_pose']
