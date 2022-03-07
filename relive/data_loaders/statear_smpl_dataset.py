@@ -98,7 +98,7 @@ class StateARDataset(data.Dataset):
             curr_expert = self.data_traj[take]
             gt_qpos = curr_expert['qpos']
             seq_len = gt_qpos.shape[0]
-
+            
             if self.data_mode == "train" and seq_len < self.fr_num and not self.cfg.wild:
                 continue
 

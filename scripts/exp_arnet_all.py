@@ -19,6 +19,7 @@ from relive.utils import *
 from relive.utils.compute_loss import DeepMimicLoss, TrajLoss
 from relive.models.mlp import MLP
 from relive.models.traj_ar_smpl_net import TrajARNet
+# from relive.models.traj_ar_kin_net import TrajARNet
 from relive.data_loaders.statear_smpl_dataset import StateARDataset
 from relive.utils.torch_humanoid import Humanoid
 from relive.utils.egomimic_config import Config as EgoConfig
@@ -44,7 +45,6 @@ def eval_sequences(cur_jobs):
             # action = seq_key.split("-")[0]
             # if action != "push":
             #     continue
-            data_acc = {}
             feature_pred = traj_ar_net.forward(data_dict)
             
             data_acc['qpos'] = feature_pred['qpos'][0].cpu().numpy()
@@ -178,24 +178,9 @@ if __name__ == "__main__":
         traj_ar_net.set_schedule_sampling(0)
 
         jobs = list(dataset.iter_data().items())
-        # data_res_full = eval_sequences(jobs)
-
+        data_res_full = eval_sequences(jobs)
         num_jobs = 5
-        chunk = np.ceil(len(jobs)/num_jobs).astype(int)
-        jobs= [jobs[i:i + chunk] for i in range(0, len(jobs), chunk)]
-        job_args = [(jobs[i],) for i in range(len(jobs))]
-        print(len(job_args))
-        data_res_full = {}
-        with torch.no_grad():
-            try:
-                pool = Pool(num_jobs)   # multi-processing
-                job_res = pool.starmap(eval_sequences, job_args)
-            except KeyboardInterrupt:
-                pool.terminate()
-                pool.join()
-        
-        [data_res_full.update(j) for j in job_res]
-        
+
         res_path = '%s/iter_%04d_%s_%s.p' % (cfg.result_dir, args.iter, args.data, cfg.data_file)
         print(f"results dir: {res_path}")
         pickle.dump(data_res_full, open(res_path, 'wb'))
@@ -206,5 +191,3 @@ if __name__ == "__main__":
         else:
             os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode stats")
             os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode vis")
-
-            

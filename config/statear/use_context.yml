@@ -19,7 +19,7 @@ use_vel: false
 use_context: true
 
 model_specs:
-  model_v: 1
+  model_v: 0
   rnn_hdim: 256
   cnn_fdim: 512
   mlp_hsize: [1024, 512, 256]
