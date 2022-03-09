@@ -1,3 +1,5 @@
+# Old Version Kinematic Network
+
 from torch import nn
 from collections import defaultdict
 import joblib
