@@ -10,13 +10,14 @@ mujoco_model: 'humanoid_smpl_neutral_mesh'
 seed: 1
 fr_num: 100
 augment: false
+smooth: True
 
 use_of: true
 use_head: true
 use_action: true
 use_vel: false
 use_context: true
-smooth: True
+
 
 model_specs:
   model_v: 1

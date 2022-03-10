@@ -16,18 +16,14 @@ from tqdm import tqdm
 from collections import defaultdict
 
 from relive.utils import *
-from relive.utils.compute_loss import DeepMimicLoss, TrajLoss
 from relive.models.mlp import MLP
 from relive.models.traj_ar_smpl_net import TrajARNet
 # from relive.models.traj_ar_kin_net import TrajARNet
 from relive.data_loaders.statear_smpl_dataset import StateARDataset
 from relive.utils.torch_humanoid import Humanoid
-from relive.utils.egomimic_config import Config as EgoConfig
 from relive.data_process.process_trajs import get_expert
 from relive.utils.torch_ext import get_scheduler
 from relive.utils.statear_smpl_config import Config
-from torch.multiprocessing import Pool, Process, set_start_method
-# from multiprocessing import Pool
 
 def eval_sequences(cur_jobs):
     with torch.no_grad():
@@ -81,9 +77,8 @@ if __name__ == "__main__":
         args.data = args.mode if args.mode in {'train', 'test'} else 'train'
 
     cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml")
-    dataset = StateARDataset(cfg, args.data)
-
-
+    
+    
     """setup"""
     dtype = torch.float64
     torch.set_default_dtype(dtype)
@@ -97,15 +92,17 @@ if __name__ == "__main__":
     tb_logger = Logger(cfg.tb_dir)
     logger = create_logger(os.path.join(cfg.log_dir, 'log.txt'))
 
-
+    """Datasets"""
+    if args.mode == 'train':
+        dataset = StateARDataset(cfg, args.data)
+    else:
+        dataset = StateARDataset(cfg, args.data, sim = True)
     data_sample = dataset.sample_seq()
     data_sample =  {k:v.clone().to(device).type(dtype) for k, v in data_sample.items()}
 
     """networks"""
     state_dim = dataset.traj_dim
     traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = args.mode)
-
-        
     if args.iter > 0:
         cp_path = '%s/iter_%04d.p' % (cfg.model_dir, args.iter)
         logger.info('loading model from checkpoint: %s' % cp_path)
@@ -128,7 +125,6 @@ if __name__ == "__main__":
     if args.mode == 'train':
         traj_ar_net.train()
         for i_epoch in range(args.iter, cfg.num_epoch):
-            scheduler.step()
             sampling_rate = max((1-i_epoch/cfg.num_epoch) * 0.3 , 0)
 
             fr_num = fr_num_start + i_epoch/cfg.num_epoch * (fr_num_end - fr_num_start) // 5 * 5
@@ -142,14 +138,15 @@ if __name__ == "__main__":
             pbar = tqdm(generator)
             optimizer = torch.optim.Adam(traj_ar_net.parameters(), lr=cfg.lr, weight_decay=cfg.weightdecay)
             for data_dict in pbar:
+                data_dict
                 data_dict = {k:v.clone().to(device).type(dtype) for k, v in data_dict.items()}
 
                 feature_pred = traj_ar_net.forward(data_dict)
                 loss, loss_idv = traj_ar_net.compute_loss(feature_pred, data_dict)
                 
                 optimizer.zero_grad()
-                loss.backward()   
-                optimizer.step()  
+                loss.backward()   # Testing GT
+                optimizer.step()  # Testing GT
 
                 pbar.set_description(f"loss: {loss.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}]")
                 epoch_loss += loss.cpu().item()
@@ -161,10 +158,9 @@ if __name__ == "__main__":
             logger.info(f'epoch {i_epoch:4d}    time {time.time() - t0:.2f}   loss {epoch_loss:.4f} {np.round(losses * 100, 4).tolist()} lr: {curr_lr} ')
             tb_logger.scalar_summary('loss', epoch_loss, i_epoch)
             [tb_logger.scalar_summary('loss' + str(i), losses[i], i_epoch) for i in range(losses.shape[0])] 
+            scheduler.step()
             
-
             if cfg.save_model_interval > 0 and (i_epoch + 1) % cfg.save_model_interval == 0:
-                # eval_model()
                 with to_cpu(traj_ar_net):
                     cp_path = '%s/iter_%04d.p' % (cfg.model_dir, i_epoch + 1)
                     model_cp = {'stateAR_net_dict': traj_ar_net.state_dict()}
@@ -181,6 +177,21 @@ if __name__ == "__main__":
         data_res_full = eval_sequences(jobs)
         num_jobs = 5
 
+        # chunk = np.ceil(len(jobs)/num_jobs).astype(int)
+        # jobs= [jobs[i:i + chunk] for i in range(0, len(jobs), chunk)]
+        # job_args = [(jobs[i],) for i in range(len(jobs))]
+        # print(len(job_args))
+        # data_res_full = {}
+        # with torch.no_grad():
+        #     try:
+        #         pool = Pool(num_jobs)   # multi-processing
+        #         job_res = pool.starmap(eval_sequences, job_args)
+        #     except KeyboardInterrupt:
+        #         pool.terminate()
+        #         pool.join()
+        
+        # [data_res_full.update(j) for j in job_res]
+        
         res_path = '%s/iter_%04d_%s_%s.p' % (cfg.result_dir, args.iter, args.data, cfg.data_file)
         print(f"results dir: {res_path}")
         pickle.dump(data_res_full, open(res_path, 'wb'))
@@ -189,5 +200,7 @@ if __name__ == "__main__":
             os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode stats --wild")
             os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode vis --wild")
         else:
-            os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode stats")
-            os.system(f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode vis")
+            stats_cmd = f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode stats"
+            vis_cmd = f"python -m scripts.eval_pose_all --cfg {args.cfg} --iter {args.iter} --mode vis"
+            print(stats_cmd); os.system(stats_cmd)
+            print(vis_cmd); os.system(vis_cmd)

@@ -26,9 +26,6 @@ from collections import defaultdict
 from tqdm import tqdm
 
 from relive.utils import *
-from relive.utils.compute_loss import DeepMimicLoss, TrajLoss
-from relive.models.mlp import MLP
-from relive.utils.torch_humanoid import Humanoid
 from relive.utils.flags import flags
 
 class StateARDataset(data.Dataset):
@@ -67,7 +64,6 @@ class StateARDataset(data.Dataset):
         self.sim = sim
         self.preprocess_data(data_mode = data_mode)
         self.len = len(self.takes)
-
         if self.cfg.use_of:
             # data_file = osp.join(cfg.data_dir, "features", "of_feat_smpl_all.p")
             # print(f"Loading of data: {data_file}")
@@ -79,7 +75,6 @@ class StateARDataset(data.Dataset):
             data_file = osp.join(cfg.data_dir, "features", f"{self.cfg.of_file}.p")
             print(f"Loading of data: {data_file}")
             self.of_data = joblib.load(data_file)
-            
 
             
         print("==================================================")
@@ -93,17 +88,20 @@ class StateARDataset(data.Dataset):
     def preprocess_data(self, data_mode = "train"):
         
         data_all = defaultdict(list)
+        of_files_acc = []
         
         for take in tqdm(self.takes):
             curr_expert = self.data_traj[take]
             gt_qpos = curr_expert['qpos']
             seq_len = gt_qpos.shape[0]
-            
+
             if self.data_mode == "train" and seq_len < self.fr_num and not self.cfg.wild:
                 continue
 
-            of_files = curr_expert['of_files']
-            assert(len(of_files) ==  seq_len)
+            if self.cfg.use_of:
+                of_files = curr_expert['of_files']
+                assert(len(of_files) ==  seq_len)
+                of_files_acc.append(of_files)
 
             # data that needs pre-processing
             traj_pos = self.get_traj_de_heading(gt_qpos)
@@ -124,12 +122,15 @@ class StateARDataset(data.Dataset):
             data_all['head_pose'].append(curr_expert['head_pose'])
             data_all['action_one_hot'].append(curr_expert['action_one_hot'])
             data_all['obj_head_relative_poses'].append(curr_expert['obj_head_relative_poses'][:, :7]) # Taking in only the first object's pose
-            data_all['of_files'].append(of_files)
             
             # if data_mode == "train"
-            data_all['obj_pose'].append(curr_expert['obj_pose'])
-            # break
+            if self.sim:
+                data_all['obj_pose'].append(curr_expert['obj_pose'])
+            else:
+                
+                data_all['obj_pose'].append(curr_expert['obj_pose'][:, :7])
             
+
             
             
         if data == 'train' or data == 'all':
@@ -144,6 +145,7 @@ class StateARDataset(data.Dataset):
             self.all_indices.append(i)
         
         self.freq_indices = np.array(self.freq_indices)
+        self.of_files = of_files_acc
 
         self.data = data_all
 
@@ -182,8 +184,13 @@ class StateARDataset(data.Dataset):
 
             # curr_qpos[3:7] = self.remove_base_rot(curr_qpos[3:7])
             v = transform_vec(v, curr_qpos[3:7], 'heading')
-            qrel = quaternion_multiply(next_qpos[3:7], quaternion_inverse(curr_qpos[3:7]))
-            axis, angle = rotation_from_quaternion(qrel, True) 
+            try:
+                qrel = quaternion_multiply(next_qpos[3:7], quaternion_inverse(curr_qpos[3:7]))
+                axis, angle = rotation_from_quaternion(qrel, True) 
+            except Exception:
+                import pdb
+                pdb.set_trace()
+
             
             if angle > np.pi: # -180 < angle < 180
                 angle -= 2 * np.pi # 
@@ -233,81 +240,40 @@ class StateARDataset(data.Dataset):
         return flow
 
 
+    def get_sample_from_take_ind(self, take_ind, full_sample = False):
+        self.curr_key = self.takes[take_ind]
+        self.curr_take_ind = take_ind
+        if full_sample:
+            self.fr_start = fr_start = 0
+            self.fr_end = fr_end = self.data["qpos"][take_ind].shape[0]
+        else:
+            self.fr_start = fr_start = np.random.randint(0, self.data["qpos"][take_ind].shape[0] - self.fr_num) 
+            self.fr_end = fr_end = fr_start + self.fr_num
+        
+        data_return = {}
+        for k in self.data.keys():
+            data_return[k] = self.data[k][take_ind][fr_start: fr_end]
+
+
+        if self.cfg.use_of:
+            # of = self.load_of(self.of_files[take_ind][fr_start: fr_end])
+            data_return['of'] = self.of_data[self.curr_key][fr_start: fr_end]
+            return data_return
+        else:
+            return data_return
 
 
     def __getitem__(self, index):
         # sample random sequence from data
         take_ind = self.sample_indices[index]
-        sample = self.get_sample_from_take_ind(take_ind)
-        sample['obj_pose'] = sample['obj_pose'][:, :7] ## ZL: kinda of a janke fix
-        return sample
+        return self.get_sample_from_take_ind(take_ind)
 
     def get_seq_len(self, index):
         return self.data["qpos"][index].shape[0]
 
-    def get_seq_key(self, index):
-        return self.takes[index]
-
-    def get_sample_from_take_ind(self, take_ind, full_sample = False, fr_start = 0):
-        self.curr_key = self.takes[take_ind]
-        self.curr_take_ind = take_ind
-        if full_sample:
-            self.fr_start = fr_start 
-            self.fr_end = fr_end = self.data["qpos"][take_ind].shape[0]
-        else:
-            self.fr_start = fr_start 
-            self.fr_end = fr_end = fr_start + self.fr_num
-        
-        data_return = {}
-
-        if self.cfg.use_of:
-            # data_return['of'] = self.load_of(self.data['of_files'][take_ind][fr_start: fr_end])
-            data_return['of'] = self.of_data[self.curr_key][fr_start: fr_end]
-
-
-        for k in self.data.keys():
-            if k in ['of_files']: continue
-            data_return[k] = self.data[k][take_ind][fr_start: fr_end]
-
-        return data_return
-    
-
-    def sample_seq(self, num_samples =1 , batch_size = 1, use_freq = True, freq_dict = None, full_sample = False, sampling_temp = 0.5, sampling_freq = 0.9):
-        start_idx = 0
-        if use_freq:
-            if freq_dict is None:
-                self.ind = ind = np.random.choice(self.freq_indices)
-            else:
-                init_probs = np.exp(-np.array([ewma(np.array(freq_dict[k])[:, 0] == 1) if len(freq_dict[k]) > 0 else 0 for k in freq_dict.keys()]) / sampling_temp)
-                init_probs = init_probs/init_probs.sum()
-                self.ind = ind = np.random.choice(self.all_indices, p = init_probs) if np.random.binomial(1, sampling_freq) else np.random.choice(self.all_indices)
-                chosen_key = self.takes[ind]
-                seq_len = self.get_seq_len(ind)
-
-                ####################
-                # perfs = np.array(freq_dict[chosen_key])
-                # if len(perfs) > 0 and len(perfs[perfs[:, 0] != 1][:, 1]) > 0 and np.random.binomial(1, sampling_freq) and not full_sample:
-                #     perfs = perfs[perfs[:, 0] != 1][:, 1]
-                #     chosen_idx = np.random.choice(perfs)
-                #     start_idx = np.random.randint(max(chosen_idx- 30, 0), min(chosen_idx + 30, seq_len - self.fr_num))
-                #     # print(start_idx, chosen_key)
-                # elif not full_sample:
-                #     start_idx = np.random.randint(0, seq_len - self.fr_num) 
-                # else:
-                #     start_idx = 0
-
-                ####################    
-                if full_sample:
-                    start_idx = 0
-                else:
-                    start_idx = np.random.randint(0, seq_len - self.fr_num) 
-                
-        else:
-            self.ind = ind = np.random.choice(self.all_indices)
-        # self.ind = ind = self.takes.index('step-08-30-2020-17-24-00')
-        
-
-        data_dict = self.get_sample_from_take_ind(ind, fr_start = start_idx, full_sample = full_sample)
+    def sample_seq(self, num_samples =1 , batch_size = 1):
+        self.ind = ind = np.random.choice(self.freq_indices)
+        data_dict = self.get_sample_from_take_ind(ind)
         return {k: torch.from_numpy(v)[None, ] for k, v in data_dict.items()}
 
     def get_seq_by_ind(self, ind, full_sample = False):
@@ -326,29 +292,27 @@ class StateARDataset(data.Dataset):
         self.curr_key = curr_key = self.takes[take_ind]
         seq_len = self.data["qpos"][take_ind].shape[0] # not using the fr_num at allllllllll
         data_return = {}
-        self.counter += 1
-        if self.cfg.use_of:
-            # data_return['of'] = self.load_of(self.data['of_files'][take_ind])
-            data_return['of'] = self.of_data[self.curr_key]
-
-            
         for k in self.data.keys():
-            if k in ['of_files']: continue
             data_return[k] = self.data[k][take_ind]
 
+        if self.cfg.use_of:
+            # data_return['of'] = self.load_of(self.of_files[take_ind])[None, ]
+            data_return['of'] = self.of_data[curr_key]
+        self.counter += 1
+
         return {k: torch.from_numpy(v)[None, ] for k, v in data_return.items()}
+
 
     def sampling_generator(self, batch_size=8, num_samples=5000, num_workers=1, fr_num = 80):
         self.fr_num = int(fr_num)
         self.iter_method = "sample"
         self.data_curr = [i for i in self.freq_indices if self.data["qpos"][i].shape[0] >= fr_num]
-        self.sample_indices = np.random.choice(self.data_curr, num_samples, replace=True)
         
+        self.sample_indices = np.random.choice(self.data_curr, num_samples, replace=True)
         self.data_len = len(self.sample_indices) # Change sequence length 
         
         loader = torch.utils.data.DataLoader(self, batch_size=batch_size,  shuffle=True, num_workers=num_workers)
         return loader
-
     
     def __len__(self):
         return self.data_len
@@ -356,19 +320,18 @@ class StateARDataset(data.Dataset):
     def iter_data(self):
         data = {}
         for take_ind in range(len(self.takes)):
-            self.curr_key = curr_key = self.takes[take_ind]
+            curr_key = self.takes[take_ind]
             seq_len = self.data["qpos"][take_ind].shape[0] # not using the fr_num at allllllllll
             data_return = {}
-            if self.cfg.use_of:
-                # data_return['of'] = self.load_of(self.data['of_files'][take_ind])
-                data_return['of'] = self.of_data[self.curr_key]
-
             for k in self.data.keys():
-                if k in ['of_files']: continue
-                data_return[k] = self.data[k][take_ind]
+                data_return[k] = self.data[k][take_ind][None, ]
 
+            if self.cfg.use_of:
+                # data_return['of'] = self.load_of(self.of_files[take_ind])[None, ]
+                data_return['of'] = self.of_data[curr_key][None, ]
             data_return['cl'] = np.array([0, seq_len])
-            data[curr_key] = {k: torch.from_numpy(v)[None, ] for k, v in data_return.items()}
+                
+            data[curr_key] = data_return
         return data
 
 
