@@ -254,7 +254,6 @@ class StateARDataset(data.Dataset):
         for k in self.data.keys():
             data_return[k] = self.data[k][take_ind][fr_start: fr_end]
 
-
         if self.cfg.use_of:
             # of = self.load_of(self.of_files[take_ind][fr_start: fr_end])
             data_return['of'] = self.of_data[self.curr_key][fr_start: fr_end]

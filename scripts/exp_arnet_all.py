@@ -18,21 +18,18 @@ from collections import defaultdict
 from relive.utils import *
 from relive.models.mlp import MLP
 from relive.models.traj_ar_smpl_net import TrajARNet
-# from relive.models.traj_ar_kin_net import TrajARNet
 from relive.data_loaders.statear_smpl_dataset import StateARDataset
 from relive.utils.torch_humanoid import Humanoid
-from relive.data_process.process_trajs import get_expert
 from relive.utils.torch_ext import get_scheduler
 from relive.utils.statear_smpl_config import Config
+# from multiprocessing import Pool
 
 def eval_sequences(cur_jobs):
     with torch.no_grad():
         traj_ar_net.load_state_dict(model_cp['stateAR_net_dict'], strict=True)
         results = defaultdict(dict)
         pbar = tqdm(cur_jobs)
-        counter = 0
         for seq_key, data_dict in pbar:
-            data_dict = {k:v.clone().to(device).type(dtype) for k, v in data_dict.items()}
             data_acc = defaultdict(list)
             # if args.cfg.startswith("wild"):
             #     from scripts.wild_meta import take_names
@@ -41,6 +38,8 @@ def eval_sequences(cur_jobs):
             # action = seq_key.split("-")[0]
             # if action != "push":
             #     continue
+            
+            data_dict = {k:torch.from_numpy(v).to(device).type(dtype) for k, v in data_dict.items()}
             feature_pred = traj_ar_net.forward(data_dict)
             
             data_acc['qpos'] = feature_pred['qpos'][0].cpu().numpy()
@@ -54,12 +53,8 @@ def eval_sequences(cur_jobs):
                 # pred_qpos[:, 7:] = gaussian_filter1d(pred_qpos[:, 7:], 1, axis = 0).copy()
             results[seq_key] = data_acc
             # results["pesudo_expert"][seq_key] = get_expert(results["traj_pred"][seq_key], 0, results["traj_pred"][seq_key].shape[0], cfg=cfg, env=env)
-            counter += 1
-            # if counter > 1:
-                # break
     return results
-    
-    
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
