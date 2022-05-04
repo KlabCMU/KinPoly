@@ -5,10 +5,10 @@
 
 This repo is still under construction: 
 - [x] UHC eval code runnable.
-- [ ] UHC training code runnable.
+- [x] UHC training code runnable.
 - [x] Kin-poly training (Supervised) code runnable.
 - [ ] Kin-poly training (RL + Supervised) code runnable.
-- [ ] Kin-poly eval code runnable.
+- [x] Kin-poly eval code runnable.
 
 ## Citation
 If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
