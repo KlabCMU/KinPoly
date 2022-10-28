@@ -45,7 +45,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin
 
 3. The rest of the dependencies can be found in ```requirements.txt```. 
 
-## Datasets
+## Datasets and trained models
 
 The datasets we use for training and evaluating our method can be found here:
 
@@ -53,7 +53,7 @@ The datasets we use for training and evaluating our method can be found here:
 
 The folders contain the a data file that contains the pre-computed object pose and camera trajectory; another data file contains the pre-computed image features; a meta file is also included for loading the respective datasets.
 
-To download the Mocap dataset, run the following script: 
+To download the Mocap dataset, real-world dataset, and trained models, run the following script: 
 
 ```
 bash download_data.sh
@@ -107,9 +107,4 @@ python scripts/eval_uhc.py --cfg uhc --iter 10000
 ```
 
 *Note that additional directory fixup may be needed for running these commands. Directorys that needs updating are named "/insert_directory_here/"*
-
-## Pre-trained models
-
-[[Kinematic policy](https://drive.google.com/file/d/1oQZzWVfWPrGzX0XyB0k4h7z6WLtSEsjX/view?usp=sharing)][[Universal Humanoid Controller](https://drive.google.com/file/d/1Hw2E8H0hHx9JwQXNsmWM0OjE1XTgFkmd/view?usp=sharing)]
-
 
