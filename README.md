@@ -3,18 +3,6 @@
 [[paper]](https://arxiv.org/abs/2106.05969) [[website]](https://zhengyiluo.github.io/projects/kin_poly/) [[Video]](https://www.youtube.com/watch?v=yEiK9K1N-zw)
 
 
-
-## Citation
-If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
-```
-@inproceedings{Luo2021DynamicsRegulatedKP,
-  title={Dynamics-Regulated Kinematic Policy for Egocentric Pose Estimation},
-  author={Zhengyi Luo and Ryo Hachiuma and Ye Yuan and Kris Kitani},
-  booktitle={Advances in Neural Information Processing Systems},
-  year={2021}
-}
-``` 
-
 ## Relationship to the main [uhc](https://github.com/KlabCMU/UniversalHumanoidControl) repository
 This repository is self-contained and house an eariler version of the universal humanoid controller (one that only supports the mean SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
 
@@ -108,3 +96,14 @@ python scripts/eval_uhc.py --cfg uhc --iter 10000
 
 *Note that additional directory fixup may be needed for running these commands. Directorys that needs updating are named "/insert_directory_here/"*
 
+
+## Citation
+If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
+```
+@inproceedings{Luo2021DynamicsRegulatedKP,
+  title={Dynamics-Regulated Kinematic Policy for Egocentric Pose Estimation},
+  author={Zhengyi Luo and Ryo Hachiuma and Ye Yuan and Kris Kitani},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2021}
+}
+``` 
