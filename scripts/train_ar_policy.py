@@ -11,7 +11,6 @@ sys.path.append(os.getcwd())
 os.environ['OMP_NUM_THREADS'] = "1"
 
 from copycat.khrylib.utils import *
-from torch.utils.tensorboard import SummaryWriter
 from relive.models.policy_ar import PolicyAR
 from copycat.utils.config import Config as CC_Config
 from mujoco_py import load_model_from_path, MjSim
@@ -81,12 +80,6 @@ def main_loop():
                     np.array2string(c_info, formatter={'all': lambda x: '%.4f' % x}, separator=','),
                     log.min_c_reward, log.max_c_reward, log.avg_episode_len))
 
-        tb_logger.add_scalar('total_reward', log.avg_c_reward, i_iter)
-        tb_logger.add_scalar('episode_len', log.avg_episode_reward, i_iter)
-        for i in range(c_info.shape[0]):
-            tb_logger.add_scalar('reward_%d' % i, c_info[i], i_iter)
-            tb_logger.add_scalar('eps_reward_%d' % i, log.avg_episode_c_info[i], i_iter)
-
         # if args.test_time: cfg.policy_specs['save_model_interval'] = 10 # ZL: more agressive saving schedule for test time
         if args.test_time:
             joblib.dump(agent.freq_dict, osp.join(cfg.result_dir, f"freq_dict_{'wild_' if args.wild else '' }test.pt"))
@@ -103,11 +96,7 @@ def main_loop():
 
             
         if cfg.policy_specs['save_model_interval'] > 0 and (i_iter+1) % cfg.policy_specs['save_model_interval'] == 0:
-            tb_logger.flush()
             agent.save_checkpoint(i_iter)
-            # if not args.test_time:
-            
-        
                 
         """clean up gpu memory"""
         torch.cuda.empty_cache()
@@ -118,7 +107,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', default=None)
-    parser.add_argument('--cc_cfg',  default="copycat_9_1")
+    parser.add_argument('--cc_cfg',  default="copycat")
     parser.add_argument('--cc_iter', type=int, default=-1)
     parser.add_argument('--render', action='store_true', default=False)
     parser.add_argument('--wild', action='store_true', default=False)
@@ -141,16 +130,16 @@ if __name__ == "__main__":
         args.data = args.mode if args.mode in {'train', 'test'} else 'train'
 
     """load CC model"""
-    cc_cfg = CC_Config(args.cc_cfg, "/insert_directory_here//", create_dirs=False)
-    cc_cfg_wild = CC_Config(args.cc_cfg, "/insert_directory_here//", create_dirs=False)
+    cc_cfg = CC_Config(args.cc_cfg, "", create_dirs=False)
+    cc_cfg_wild = CC_Config(args.cc_cfg, "", create_dirs=False)
 
     if args.wild:
-        cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
+        cc_cfg.mujoco_model_file = "assets/mujoco_models/humanoid_smpl_neutral_mesh_all.xml"
     else:
-        cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all_step.xml"
-    cc_cfg_wild.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
+        cc_cfg.mujoco_model_file = "assets/mujoco_models/humanoid_smpl_neutral_mesh_all_step.xml"
+    cc_cfg_wild.mujoco_model_file = "assets/mujoco_models/humanoid_smpl_neutral_mesh_all.xml"
 
-    cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "%s.xml")
+    cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "assets/mujoco_models/%s.xml")
 
     dtype = torch.float64
     torch.set_default_dtype(dtype)
@@ -160,16 +149,13 @@ if __name__ == "__main__":
     print(f"Using: {device}")
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
-    tb_logger = SummaryWriter(cfg.tb_test_dir) if not args.render else None
     logger = create_logger(os.path.join(cfg.log_dir, f'log_ar{"_test" if args.test_time else ""}_{"wild_" if args.wild else ""}policy.txt'), file_handle=not args.render)
-
 
     if args.render:
         args.num_threads = 1
 
-
     """Datasets"""
-    data_loader = StateARDataset(cfg, args.data, sim = True)
+    data_loader = StateARDataset(cfg, args.data, sim = False)
     data_sample = data_loader.sample_seq()
     data_sample =  {k:v.to(device).clone().type(dtype) for k, v in data_sample.items()}
 
