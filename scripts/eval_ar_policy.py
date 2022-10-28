@@ -20,13 +20,13 @@ import torch
 import copy
 import time
 
-from kinpoly.utils.statear_smpl_config import Config
+from kin_poly.utils.statear_smpl_config import Config
 from uhc.khrylib.utils import *
 from uhc.khrylib.rl.utils.visualizer import Visualizer
 from uhc.utils.config import Config as CC_Config
 from mujoco_py import load_model_from_path, MjSim
 from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
-from kinpoly.utils.flags import flags
+from kin_poly.utils.flags import flags
 
 
 class MyVisulizer(Visualizer):
@@ -309,9 +309,9 @@ if __name__ == "__main__":
 
     from uhc.khrylib.rl.core.critic import Value
     from uhc.khrylib.models.mlp import MLP
-    from kinpoly.envs.humanoid_ar_v1 import HumanoidAREnv
-    from kinpoly.data_loaders.statear_smpl_dataset import StateARDataset
-    from kinpoly.models.policy_ar import PolicyAR
+    from kin_poly.envs.humanoid_ar_v1 import HumanoidAREnv
+    from kin_poly.data_loaders.statear_smpl_dataset import StateARDataset
+    from kin_poly.models.policy_ar import PolicyAR
     if args.wild:
         vis_file = "humanoid_smpl_neutral_mesh_all_vis.xml"
     else:
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
     cc_cfg.env_start_first = True
     device = torch.device("cpu")
-    from kinpoly.core.reward_function import reward_func
+    from kin_poly.core.reward_function import reward_func
     custom_reward = reward_func[cfg.policy_specs['reward_id']]
     
     logger = create_logger(os.path.join(cfg.log_dir, 'log_eval.txt'))

@@ -107,17 +107,17 @@ if __name__ == "__main__":
     khry_chosen_grad = [khry_bone_names.index(i) for i in khry_chosen_bones_grad]
 
 
-    # kinpoly_mocap = joblib.load("/insert_directory_here/egopose_mocap_smpl.pkl")
-    kinpoly_mocap = joblib.load("/insert_directory_here/kinpoly_mocap_smpl.pkl")
+    # kin_poly_mocap = joblib.load("/insert_directory_here/egopose_mocap_smpl.pkl")
+    kin_poly_mocap = joblib.load("/insert_directory_here/kin_poly_mocap_smpl.pkl")
 
     
-    kinpoly_mocap_grad = defaultdict(dict)
+    kin_poly_mocap_grad = defaultdict(dict)
 
     pose_aa_acc = []
     khry_qposes_acc = []
-    for k in tqdm(kinpoly_mocap.keys()):
-        pose_aa = kinpoly_mocap[k]['pose']
-        khry_qposes = kinpoly_mocap[k]['khry_qpos']
+    for k in tqdm(kin_poly_mocap.keys()):
+        pose_aa = kin_poly_mocap[k]['pose']
+        khry_qposes = kin_poly_mocap[k]['khry_qpos']
         pose_aa_acc.append(pose_aa)
         khry_qposes_acc.append(khry_qposes[:, -59:])
 
@@ -176,17 +176,17 @@ if __name__ == "__main__":
     # if i % 10 ==0:
     
     seq_len_acc = 0
-    for k in tqdm(kinpoly_mocap.keys()):
-        pose_aa = kinpoly_mocap[k]['pose']
+    for k in tqdm(kin_poly_mocap.keys()):
+        pose_aa = kin_poly_mocap[k]['pose']
         seq_len = pose_aa.shape[0]
         
-        kinpoly_mocap_grad[k]['pose'] = pose_aa_torch[seq_len_acc:(seq_len_acc + seq_len)]
-        kinpoly_mocap_grad[k]['khry_qpos'] = kinpoly_mocap[k]['khry_qpos']
-        kinpoly_mocap_grad[k]['trans'] = kinpoly_mocap[k]['trans']
-        kinpoly_mocap_grad[k]['obj_pose'] = kinpoly_mocap[k]['obj_pose']
+        kin_poly_mocap_grad[k]['pose'] = pose_aa_torch[seq_len_acc:(seq_len_acc + seq_len)]
+        kin_poly_mocap_grad[k]['khry_qpos'] = kin_poly_mocap[k]['khry_qpos']
+        kin_poly_mocap_grad[k]['trans'] = kin_poly_mocap[k]['trans']
+        kin_poly_mocap_grad[k]['obj_pose'] = kin_poly_mocap[k]['obj_pose']
         seq_len_acc += seq_len
     
-    # np.sum([np.sum(np.abs(kinpoly_mocap_grad[k]['pose'] -  kinpoly_mocap[k]['pose'])) for k in kinpoly_mocap.keys()])
-    # joblib.dump(kinpoly_mocap_grad, "/insert_directory_here/egopose_mocap_smpl_grad_stepsize.pkl")
-    joblib.dump(kinpoly_mocap_grad, "/insert_directory_here/kinpoly_mocap_smpl_grad_stepsize.pkl")
+    # np.sum([np.sum(np.abs(kin_poly_mocap_grad[k]['pose'] -  kin_poly_mocap[k]['pose'])) for k in kin_poly_mocap.keys()])
+    # joblib.dump(kin_poly_mocap_grad, "/insert_directory_here/egopose_mocap_smpl_grad_stepsize.pkl")
+    joblib.dump(kin_poly_mocap_grad, "/insert_directory_here/kin_poly_mocap_smpl_grad_stepsize.pkl")
 

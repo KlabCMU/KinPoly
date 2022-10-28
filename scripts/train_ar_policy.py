@@ -11,21 +11,21 @@ sys.path.append(os.getcwd())
 os.environ['OMP_NUM_THREADS'] = "1"
 
 from uhc.khrylib.utils import *
-from kinpoly.models.policy_ar import PolicyAR
+from kin_poly.models.policy_ar import PolicyAR
 from uhc.utils.config import Config as CC_Config
 from mujoco_py import load_model_from_path, MjSim
 from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
-from kinpoly.utils.statear_smpl_config import Config
-from kinpoly.core.reward_function import reward_func
-from kinpoly.utils.flags import flags
+from kin_poly.utils.statear_smpl_config import Config
+from kin_poly.core.reward_function import reward_func
+from kin_poly.utils.flags import flags
 from tqdm import tqdm
 
 from uhc.khrylib.rl.core.critic import Value
 from uhc.khrylib.models.mlp import MLP
-from kinpoly.envs.humanoid_ar_v1 import HumanoidAREnv
-from kinpoly.data_loaders.statear_smpl_dataset import StateARDataset
-from kinpoly.models.traj_ar_smpl_net import TrajARNet
-from kinpoly.core.agent_ar import AgentAR
+from kin_poly.envs.humanoid_ar_v1 import HumanoidAREnv
+from kin_poly.data_loaders.statear_smpl_dataset import StateARDataset
+from kin_poly.models.traj_ar_smpl_net import TrajARNet
+from kin_poly.core.agent_ar import AgentAR
 
 def main_loop():
     # if args.render:

@@ -15,13 +15,13 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from collections import defaultdict
 
-from kinpoly.utils import *
-from kinpoly.models.mlp import MLP
-from kinpoly.models.traj_ar_smpl_net import TrajARNet
-from kinpoly.data_loaders.statear_smpl_dataset import StateARDataset
-from kinpoly.utils.torch_humanoid import Humanoid
-from kinpoly.utils.torch_ext import get_scheduler
-from kinpoly.utils.statear_smpl_config import Config
+from kin_poly.utils import *
+from kin_poly.models.mlp import MLP
+from kin_poly.models.traj_ar_smpl_net import TrajARNet
+from kin_poly.data_loaders.statear_smpl_dataset import StateARDataset
+from kin_poly.utils.torch_humanoid import Humanoid
+from kin_poly.utils.torch_ext import get_scheduler
+from kin_poly.utils.statear_smpl_config import Config
 # from multiprocessing import Pool
 
 def eval_sequences(cur_jobs):

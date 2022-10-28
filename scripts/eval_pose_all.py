@@ -16,10 +16,10 @@ from datetime import datetime
 sys.path.append(os.getcwd())
 from collections import defaultdict
 
-from kinpoly.utils.metrics import *
-from kinpoly.envs.visual.humanoid_vis import HumanoidVisEnv
+from kin_poly.utils.metrics import *
+from kin_poly.envs.visual.humanoid_vis import HumanoidVisEnv
 from mujoco_py import load_model_from_path, MjSim
-from kinpoly.utils.statear_smpl_config import Config
+from kin_poly.utils.statear_smpl_config import Config
 from tqdm import tqdm
 
 from uhc.envs.humanoid_im import HumanoidEnv as CC_HumanoidEnv
@@ -465,7 +465,7 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
             
 
     return succ
-class kinpolyVisulizer(Visualizer):
+class kin_polyVisulizer(Visualizer):
 
     def __init__(self, vis_file):
         super().__init__(vis_file)
@@ -698,7 +698,7 @@ if __name__ == "__main__":
     if args.mode == "stats":
         compute_metrics(sr_res, args.algo)
     elif args.mode == "vis":
-        vis = kinpolyVisulizer("humanoid_smpl_neutral_mesh_all_vis.xml")
+        vis = kin_polyVisulizer("humanoid_smpl_neutral_mesh_all_vis.xml")
         vis.show_animation()
 
 

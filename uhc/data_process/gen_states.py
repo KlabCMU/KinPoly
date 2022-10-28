@@ -44,7 +44,7 @@ if __name__ == "__main__":
     cfg = Config("uhc_9", False, create_dirs=False)
     # cfg.data_specs['test_file_path'] = "/insert_directory_here/amass_uhc_take3_test.pkl"
     # cfg.data_specs['test_file_path'] = "/insert_directory_here/amass_uhc_take3.pkl"
-    cfg.data_specs['test_file_path'] = "/insert_directory_here/kinpoly_uhc.pkl"
+    cfg.data_specs['test_file_path'] = "/insert_directory_here/kin_poly_uhc.pkl"
     data_loader = DatasetAMASSSingle(cfg.data_specs, data_mode="test")
     init_expert = data_loader.sample_seq()
     env = HumanoidEnv(cfg, init_expert = init_expert, data_specs = cfg.data_specs, mode="test")
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         pool.join()
     
     [data_res_full.update(j) for j in job_res]
-    joblib.dump(data_res_full, "/insert_directory_here/kinpoly_uhc_states.pkl")
+    joblib.dump(data_res_full, "/insert_directory_here/kin_poly_uhc_states.pkl")
     # joblib.dump(data_res_full, "/insert_directory_here/amass_uhc_take3_states_obs_v2.pkl")
     # joblib.dump(data_res_full, "/insert_directory_here/amass_uhc_take3_test_states.pkl")
     
