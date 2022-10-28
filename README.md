@@ -3,12 +3,6 @@
 [[paper]](https://arxiv.org/abs/2106.05969) [[website]](https://zhengyiluo.github.io/projects/kin_poly/) [[Video]](https://www.youtube.com/watch?v=yEiK9K1N-zw)
 
 
-This repo is still under construction: 
-- [x] UHC eval code runnable.
-- [x] UHC training code runnable.
-- [x] Kin-poly training (Supervised) code runnable.
-- [ ] Kin-poly training (RL + Supervised) code runnable.
-- [x] Kin-poly eval code runnable.
 
 ## Citation
 If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
@@ -19,7 +13,10 @@ If you find our work useful in your research, please cite our paper [kin_poly](h
   booktitle={Advances in Neural Information Processing Systems},
   year={2021}
 }
-```
+``` 
+
+## Relationship to the main [uhc](https://github.com/KlabCMU/UniversalHumanoidControl) repository
+This repository is self-contained and house an eariler version of the universal humanoid controller (one that only supports the mean SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
 
 ## Introduction
 
@@ -115,6 +112,4 @@ python scripts/eval_uhc.py --cfg uhc --iter 10000
 
 [[Kinematic policy](https://drive.google.com/file/d/1oQZzWVfWPrGzX0XyB0k4h7z6WLtSEsjX/view?usp=sharing)][[Universal Humanoid Controller](https://drive.google.com/file/d/1Hw2E8H0hHx9JwQXNsmWM0OjE1XTgFkmd/view?usp=sharing)]
 
-## Licence
 
-To be updated. 
