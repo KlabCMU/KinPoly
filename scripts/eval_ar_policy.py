@@ -388,8 +388,3 @@ if __name__ == "__main__":
         elif args.mode == "disp_fit":
             vis.display_fit()
 
-
-    # if args.record:
-    #     vis.record_video()
-    # else:
-    #     vis.show_animation()

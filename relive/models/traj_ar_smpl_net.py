@@ -22,7 +22,7 @@ from relive.utils.compute_loss import pose_rot_loss, root_pos_loss, root_orienta
 
 class TrajARNet(nn.Module):
 
-    def __init__(self, cfg, data_sample, device, dtype, mode = "train"):
+    def __init__(self, cfg, data_sample, device, dtype, mode = "train", as_policy = False):
         super(TrajARNet, self).__init__()
         self.cfg = cfg
         self.device = device
@@ -41,6 +41,7 @@ class TrajARNet(nn.Module):
         self.rnn_hdim = rnn_hdim = self.specs.get("rnn_hdim", 512)
         self.rnn_type = rnn_type = self.specs.get("rnn_type", "gru")
         self.cnn_fdim = cnn_fdim = self.specs.get("cnn_fdim", 128)
+        self.as_policy = as_policy
 
         self.sim = dict()
         self.get_dim(data_sample)
@@ -259,7 +260,7 @@ class TrajARNet(nn.Module):
         pred_obj_relative_head = torch.cat([diff_obj_loc, obj_rot_local], dim = 1)
         
         # state 
-        # order of these matters !!! 74 + 75 + 3 + 4 + 7 + 3 + 3 + 7
+        # order of these matters !!! 
         obs.append(curr_qpos_local[:, 2:]) # current height + local body orientation + body pose 74
         if self.cfg.use_vel:
             obs.append(curr_qvel) # current velocities 75
@@ -276,21 +277,17 @@ class TrajARNet(nn.Module):
             obs.append(t_obj_relative_head)  # target object relative to head 7 
 
         ################################################################################
-        # if self.cfg.use_action and self.model_v > 0:
-        #     obs.append(data['action_one_hot'][:, t, :])
-        #     # print(data['action_one_hot'][:, t, :].shape)
+        ##### For the policy, we do not use the context feature, so we put the action/of here ##
+        if self.cfg.use_action and self.model_v > 0 and self.as_policy:
+            obs.append(data['action_one_hot'][:, t, :])
 
-        # if self.cfg.use_of:
-        #     # Not sure what to do yet......
-        #     obs.append(data['of'][:, t, :])
-        
+        if self.cfg.use_of and self.as_policy:
+            obs.append(data['of'][:, t, :])
         
         obs = torch.cat(obs, dim = 1)
 
         return obs, {"pred_wbpos": pred_wbpos, "pred_wbquat": pred_wbquat,  "pred_rot": pred_bquat,
                      "qvel": curr_qvel, "qpos": curr_qpos, "obj_2_head": pred_obj_relative_head}
-    
-
     
     def step(self, action, dt = 1/30):
         curr_qpos = self.sim['qpos'].clone()

@@ -27,13 +27,13 @@ class PolicyAR(Policy):
         fix_std = cfg.policy_specs['fix_std']
         log_std = cfg.policy_specs['log_std']
 
-        traj_ar_net_old = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = mode)
+        traj_ar_net_old = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = mode, as_policy=True)
         self.old_arnet = [traj_ar_net_old]
 
         if self.policy_v == 1:
             self.action_dim = action_dim = 80
             self.state_dim = state_dim = traj_ar_net_old.state_dim
-            self.traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = mode)
+            self.traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = mode, as_policy=True)
             self.setup_optimizers()
             
         elif self.policy_v == 2:

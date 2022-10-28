@@ -46,7 +46,6 @@ def eval_sequences(cur_jobs):
             data_acc['qpos_gt'] = data_dict['qpos'][0].cpu().numpy()
             data_acc['obj_pose'] = data_dict['obj_pose'][0].cpu().numpy()
             
-            
             # print(orig_qpos.shape)
             # if args.smooth:
                 # from scipy.ndimage import gaussian_filter1d
@@ -72,7 +71,6 @@ if __name__ == "__main__":
 
     cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "assets/mujoco_models/%s.xml")
     
-    
     """setup"""
     dtype = torch.float64
     torch.set_default_dtype(dtype)
@@ -95,7 +93,7 @@ if __name__ == "__main__":
 
     """networks"""
     state_dim = dataset.traj_dim
-    traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = args.mode)
+    traj_ar_net = TrajARNet(cfg, data_sample = data_sample, device = device, dtype = dtype, mode = args.mode, as_policy = False)
     if args.iter > 0:
         cp_path = '%s/iter_%04d.p' % (cfg.model_dir, args.iter)
         logger.info('loading model from checkpoint: %s' % cp_path)
@@ -168,21 +166,6 @@ if __name__ == "__main__":
         data_res_full = eval_sequences(jobs)
         num_jobs = 5
 
-        # chunk = np.ceil(len(jobs)/num_jobs).astype(int)
-        # jobs= [jobs[i:i + chunk] for i in range(0, len(jobs), chunk)]
-        # job_args = [(jobs[i],) for i in range(len(jobs))]
-        # print(len(job_args))
-        # data_res_full = {}
-        # with torch.no_grad():
-        #     try:
-        #         pool = Pool(num_jobs)   # multi-processing
-        #         job_res = pool.starmap(eval_sequences, job_args)
-        #     except KeyboardInterrupt:
-        #         pool.terminate()
-        #         pool.join()
-        
-        # [data_res_full.update(j) for j in job_res]
-        
         res_path = '%s/iter_%04d_%s_%s.p' % (cfg.result_dir, args.iter, args.data, cfg.data_file)
         print(f"results dir: {res_path}")
         pickle.dump(data_res_full, open(res_path, 'wb'))
