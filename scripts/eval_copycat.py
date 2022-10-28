@@ -18,11 +18,11 @@ from tqdm import tqdm
 import joblib
 import numpy as np
 
-from copycat.khrylib.rl.utils.visualizer import Visualizer
-from copycat.utils.config import Config
+from uhc.khrylib.rl.utils.visualizer import Visualizer
+from uhc.utils.config import Config
 from mujoco_py import load_model_from_path, MjSim
-from copycat.khrylib.rl.envs.common.mjviewer import MjViewer
-from copycat.data_loaders.dataset_amass_single import DatasetAMASSSingle
+from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
+from uhc.data_loaders.dataset_amass_single import DatasetAMASSSingle
 
 
 class MyVisulizer(Visualizer):
@@ -285,15 +285,15 @@ if __name__ == "__main__":
     if args.data == "singles" or args.mode == "disp_stats":
         cfg.data_specs[
             "test_file_path"
-        ] = "/insert_directory_here/amass_copycat_test_singles.pkl"
+        ] = "/insert_directory_here/amass_uhc_test_singles.pkl"
     elif args.data == "all":
         cfg.data_specs[
             "test_file_path"
-        ] = "/insert_directory_here/amass_copycat_take4.pkl"
+        ] = "/insert_directory_here/amass_uhc_take4.pkl"
     elif args.data == "test":
         cfg.data_specs[
             "test_file_path"
-        ] = "/insert_directory_here/amass_copycat_take3_test.pkl"
+        ] = "/insert_directory_here/amass_uhc_take3_test.pkl"
     elif args.data == "usr":
         pass
 
@@ -310,12 +310,12 @@ if __name__ == "__main__":
         sim = MjSim(model)
         viewer = MjViewer(sim)
 
-    from copycat.khrylib.models.mlp import MLP
-    from copycat.envs.humanoid_im import HumanoidEnv
-    from copycat.khrylib.utils import *
-    from copycat.khrylib.rl.core.policy_gaussian import PolicyGaussian
-    from copycat.core.policy_mcp import PolicyMCP
-    from copycat.khrylib.rl.core.critic import Value
+    from uhc.khrylib.models.mlp import MLP
+    from uhc.envs.humanoid_im import HumanoidEnv
+    from uhc.khrylib.utils import *
+    from uhc.khrylib.rl.core.policy_gaussian import PolicyGaussian
+    from uhc.core.policy_mcp import PolicyMCP
+    from uhc.khrylib.rl.core.critic import Value
 
     cfg.env_start_first = True
     device = torch.device("cpu")

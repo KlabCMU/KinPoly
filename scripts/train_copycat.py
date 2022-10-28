@@ -10,9 +10,9 @@ import os.path as osp
 os.environ['OMP_NUM_THREADS'] = "1"
 sys.path.append(os.getcwd())
 
-from copycat.khrylib.utils import *
+from uhc.khrylib.utils import *
 from torch.utils.tensorboard import SummaryWriter
-from copycat.utils.config import Config
+from uhc.utils.config import Config
 
 
 def pre_iter_update(i_iter):
@@ -111,22 +111,22 @@ if __name__ == "__main__":
 
     if args.render:
         from mujoco_py import load_model_from_path, MjSim
-        from copycat.khrylib.rl.envs.common.mjviewer import MjViewer
+        from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
         args.num_threads = 1
         model = load_model_from_path(f'assets/mujoco_models/{cfg.mujoco_model_file}')
         sim = MjSim(model)
         viewer = MjViewer(sim)
 
 
-    from copycat.khrylib.rl.core.policy_gaussian import PolicyGaussian
-    from copycat.khrylib.rl.core.critic import Value
-    from copycat.core.agent_copycat import AgentCopycat
+    from uhc.khrylib.rl.core.policy_gaussian import PolicyGaussian
+    from uhc.khrylib.rl.core.critic import Value
+    from uhc.core.agent_uhc import Agentuhc
 
-    from copycat.core.reward_function import reward_func
-    from copycat.core.policy_mcp import PolicyMCP
-    from copycat.khrylib.models.mlp import MLP
-    from copycat.envs.humanoid_im import HumanoidEnv
-    from copycat.data_loaders.dataset_amass_single import DatasetAMASSSingle
+    from uhc.core.reward_function import reward_func
+    from uhc.core.policy_mcp import PolicyMCP
+    from uhc.khrylib.models.mlp import MLP
+    from uhc.envs.humanoid_im import HumanoidEnv
+    from uhc.data_loaders.dataset_amass_single import DatasetAMASSSingle
 
 
     """environment"""
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     # reward functions
     expert_reward = reward_func[cfg.reward_id]
     """create agent"""
-    agent = AgentCopycat(cfg = cfg, env=env, dtype=dtype, device=device, running_state=running_state,
+    agent = Agentuhc(cfg = cfg, env=env, dtype=dtype, device=device, running_state=running_state,
                     custom_reward=expert_reward, mean_action=args.render and not args.show_noise,
                     render=args.render, num_threads=args.num_threads, data_loader = data_loader,
                     policy_net=policy_net, value_net=value_net,

@@ -20,13 +20,13 @@ import torch
 import copy
 import time
 
-from relive.utils.statear_smpl_config import Config
-from copycat.khrylib.utils import *
-from copycat.khrylib.rl.utils.visualizer import Visualizer
-from copycat.utils.config import Config as CC_Config
+from kinpoly.utils.statear_smpl_config import Config
+from uhc.khrylib.utils import *
+from uhc.khrylib.rl.utils.visualizer import Visualizer
+from uhc.utils.config import Config as CC_Config
 from mujoco_py import load_model_from_path, MjSim
-from copycat.khrylib.rl.envs.common.mjviewer import MjViewer
-from relive.utils.flags import flags
+from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
+from kinpoly.utils.flags import flags
 
 
 class MyVisulizer(Visualizer):
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('--cfg', default=None)
     parser.add_argument('--iter', type=int, default=-1)
     parser.add_argument('--ar_iter', type=int, default=-1)
-    parser.add_argument('--cc_cfg', type=str, default="copycat")
+    parser.add_argument('--cc_cfg', type=str, default="uhc")
     parser.add_argument('--cc_iter', type=int, default=-1)
     parser.add_argument('--mode', type=str, default='vis')
     parser.add_argument('--input', action='store_true', default=False)
@@ -307,11 +307,11 @@ if __name__ == "__main__":
         # sim = MjSim(model)
         # viewer = MjViewer(sim)
 
-    from copycat.khrylib.rl.core.critic import Value
-    from copycat.khrylib.models.mlp import MLP
-    from relive.envs.humanoid_ar_v1 import HumanoidAREnv
-    from relive.data_loaders.statear_smpl_dataset import StateARDataset
-    from relive.models.policy_ar import PolicyAR
+    from uhc.khrylib.rl.core.critic import Value
+    from uhc.khrylib.models.mlp import MLP
+    from kinpoly.envs.humanoid_ar_v1 import HumanoidAREnv
+    from kinpoly.data_loaders.statear_smpl_dataset import StateARDataset
+    from kinpoly.models.policy_ar import PolicyAR
     if args.wild:
         vis_file = "humanoid_smpl_neutral_mesh_all_vis.xml"
     else:
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
     cc_cfg.env_start_first = True
     device = torch.device("cpu")
-    from relive.core.reward_function import reward_func
+    from kinpoly.core.reward_function import reward_func
     custom_reward = reward_func[cfg.policy_specs['reward_id']]
     
     logger = create_logger(os.path.join(cfg.log_dir, 'log_eval.txt'))
@@ -364,7 +364,7 @@ if __name__ == "__main__":
         # policy_net.old_arnet[0].load_state_dict(copy.deepcopy(policy_net.traj_ar_net.state_dict())) # ZL: should use the new old net as well
 
         value_net.load_state_dict(model_cp['value_dict'])
-        running_state = model_cp['running_state']
+        running_state = None # ARNet does not use running state
         
     to_device(device, policy_net, value_net)
 

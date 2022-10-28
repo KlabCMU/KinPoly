@@ -16,16 +16,16 @@ from datetime import datetime
 sys.path.append(os.getcwd())
 from collections import defaultdict
 
-from relive.utils.metrics import *
-from relive.envs.visual.humanoid_vis import HumanoidVisEnv
+from kinpoly.utils.metrics import *
+from kinpoly.envs.visual.humanoid_vis import HumanoidVisEnv
 from mujoco_py import load_model_from_path, MjSim
-from relive.utils.statear_smpl_config import Config
+from kinpoly.utils.statear_smpl_config import Config
 from tqdm import tqdm
 
-from copycat.envs.humanoid_im import HumanoidEnv as CC_HumanoidEnv
-from copycat.utils.config import Config as CC_Config
-from copycat.data_loaders.dataset_smpl_obj import DatasetSMPLObj
-from copycat.khrylib.rl.utils.visualizer import Visualizer
+from uhc.envs.humanoid_im import HumanoidEnv as CC_HumanoidEnv
+from uhc.utils.config import Config as CC_Config
+from uhc.data_loaders.dataset_smpl_obj import DatasetSMPLObj
+from uhc.khrylib.rl.utils.visualizer import Visualizer
 import joblib
     
 def compute_accel(joints):
@@ -465,7 +465,7 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
             
 
     return succ
-class ReliveVisulizer(Visualizer):
+class kinpolyVisulizer(Visualizer):
 
     def __init__(self, vis_file):
         super().__init__(vis_file)
@@ -550,7 +550,7 @@ if __name__ == "__main__":
 
     logger = create_logger(os.path.join("results", 'log_eval.txt'))
 
-    cc_cfg = CC_Config("copycat", "", create_dirs=False)
+    cc_cfg = CC_Config("uhc", "", create_dirs=False)
 
     if args.wild:
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
@@ -698,7 +698,7 @@ if __name__ == "__main__":
     if args.mode == "stats":
         compute_metrics(sr_res, args.algo)
     elif args.mode == "vis":
-        vis = ReliveVisulizer("humanoid_smpl_neutral_mesh_all_vis.xml")
+        vis = kinpolyVisulizer("humanoid_smpl_neutral_mesh_all_vis.xml")
         vis.show_animation()
 
 

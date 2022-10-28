@@ -10,22 +10,22 @@ import copy
 sys.path.append(os.getcwd())
 os.environ['OMP_NUM_THREADS'] = "1"
 
-from copycat.khrylib.utils import *
-from relive.models.policy_ar import PolicyAR
-from copycat.utils.config import Config as CC_Config
+from uhc.khrylib.utils import *
+from kinpoly.models.policy_ar import PolicyAR
+from uhc.utils.config import Config as CC_Config
 from mujoco_py import load_model_from_path, MjSim
-from copycat.khrylib.rl.envs.common.mjviewer import MjViewer
-from relive.utils.statear_smpl_config import Config
-from relive.core.reward_function import reward_func
-from relive.utils.flags import flags
+from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
+from kinpoly.utils.statear_smpl_config import Config
+from kinpoly.core.reward_function import reward_func
+from kinpoly.utils.flags import flags
 from tqdm import tqdm
 
-from copycat.khrylib.rl.core.critic import Value
-from copycat.khrylib.models.mlp import MLP
-from relive.envs.humanoid_ar_v1 import HumanoidAREnv
-from relive.data_loaders.statear_smpl_dataset import StateARDataset
-from relive.models.traj_ar_smpl_net import TrajARNet
-from relive.core.agent_ar import AgentAR
+from uhc.khrylib.rl.core.critic import Value
+from uhc.khrylib.models.mlp import MLP
+from kinpoly.envs.humanoid_ar_v1 import HumanoidAREnv
+from kinpoly.data_loaders.statear_smpl_dataset import StateARDataset
+from kinpoly.models.traj_ar_smpl_net import TrajARNet
+from kinpoly.core.agent_ar import AgentAR
 
 def main_loop():
     # if args.render:
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--cfg', default=None)
-    parser.add_argument('--cc_cfg',  default="copycat")
+    parser.add_argument('--cc_cfg',  default="uhc")
     parser.add_argument('--cc_iter', type=int, default=-1)
     parser.add_argument('--render', action='store_true', default=False)
     parser.add_argument('--wild', action='store_true', default=False)
