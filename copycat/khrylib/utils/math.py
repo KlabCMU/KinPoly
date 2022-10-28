@@ -1,7 +1,7 @@
 import torch
 import math
 import numpy as np
-from khrylib.utils.transformation import quaternion_matrix, quaternion_about_axis,\
+from copycat.khrylib.utils.transformation import quaternion_matrix, quaternion_about_axis,\
     quaternion_inverse, quaternion_multiply, rotation_from_quaternion, rotation_from_matrix, \
         random_quaternion
 

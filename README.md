@@ -29,7 +29,24 @@ Notice that internally, we call the task of **Egocentric Pose Estimation** "reli
 
 ## Dependencies
 
-The environment we used for running this project can be found in ```requirements.txt```. Notice that to estimate physically plausible human pose the [Mujoco](http://www.mujoco.org/) physics simulation is needed to train and evaluate our code.
+To create the environment, follow the following instructions: 
+
+1. Create new conda environment and install pytroch:
+```
+conda create -n kinpoly python=3.8
+conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
+```
+
+2. Download and setup mujoco: [Mujoco](http://www.mujoco.org/)
+```
+wget https://github.com/deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz
+tar -xzf mujoco210-linux-x86_64.tar.gz
+mkdir ~/.mujoco
+mv mujoco210 ~/.mujoco/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin
+```
+
+3. The rest of the dependencies can be found in ```requirements.txt```. 
 
 ## Datasets
 

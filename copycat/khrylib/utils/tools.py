@@ -5,7 +5,7 @@ import datetime
 import subprocess
 from os import path
 from PIL import Image
-from khrylib.utils.math import *
+from copycat.khrylib.utils.math import *
 import cv2
 
 

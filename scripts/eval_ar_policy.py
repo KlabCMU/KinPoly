@@ -292,9 +292,9 @@ if __name__ == "__main__":
         
     cc_cfg = CC_Config(args.cc_cfg, "", create_dirs=False, mujoco_path = "assets/mujoco_models/%s.xml")
     if args.wild:
-        cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
+        cc_cfg.mujoco_model_file = "assets/mujoco_models/humanoid_smpl_neutral_mesh_all.xml"
     else:
-        cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all_step.xml"
+        cc_cfg.mujoco_model_file = "assets/mujoco_models/humanoid_smpl_neutral_mesh_all_step.xml"
         
     cfg = Config(args.action, args.cfg, create_dirs=(args.iter == 0), wild = args.wild,  mujoco_path = "assets/mujoco_models/%s.xml")
     np.random.seed(1)
@@ -302,7 +302,6 @@ if __name__ == "__main__":
     # print(cfg.takes)
 
     """make and seed env"""
-    import ipdb; ipdb.set_trace()
     model = load_model_from_path(cc_cfg.mujoco_model_file)
     # if args.mode != "stats" :
         # sim = MjSim(model)

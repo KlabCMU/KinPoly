@@ -64,14 +64,13 @@ if __name__ == "__main__":
     parser.add_argument('--gpu-index', type=int, default=0)
     parser.add_argument('--iter', type=int, default=0)
     parser.add_argument('--action', type=str, default='all')
-    parser.add_argument('--perspective', type=str, default='first')
     parser.add_argument('--wild', action='store_true', default=False)
     args = parser.parse_args()
 
     if args.data is None:
         args.data = args.mode if args.mode in {'train', 'test'} else 'train'
 
-    cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml")
+    cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "assets/mujoco_models/%s.xml")
     
     
     """setup"""
@@ -84,7 +83,6 @@ if __name__ == "__main__":
         torch.cuda.set_device(args.gpu_index)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
-    tb_logger = Logger(cfg.tb_dir)
     logger = create_logger(os.path.join(cfg.log_dir, 'log.txt'))
 
     """Datasets"""
@@ -151,8 +149,6 @@ if __name__ == "__main__":
             losses /= cfg.num_sample
             curr_lr = optimizer.param_groups[0]["lr"]
             logger.info(f'epoch {i_epoch:4d}    time {time.time() - t0:.2f}   loss {epoch_loss:.4f} {np.round(losses * 100, 4).tolist()} lr: {curr_lr} ')
-            tb_logger.scalar_summary('loss', epoch_loss, i_epoch)
-            [tb_logger.scalar_summary('loss' + str(i), losses[i], i_epoch) for i in range(losses.shape[0])] 
             scheduler.step()
             
             if cfg.save_model_interval > 0 and (i_epoch + 1) % cfg.save_model_interval == 0:
