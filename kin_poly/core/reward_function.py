@@ -4,7 +4,7 @@ from kin_poly.utils.flags import flags
 
 def quat_space_reward_v2(env, state, action, info):
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_c, w_r = ws.get('w_p', 0.5), ws.get('w_v', 0.05), ws.get('w_e', 0.15), ws.get('w_c', 0.1), ws.get('w_r', 0.2)
     k_p, k_v, k_e, k_c, k_r = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20), ws.get('k_c', 1000), ws.get('k_r', 1.0)
@@ -62,7 +62,7 @@ def quat_space_reward_v2(env, state, action, info):
 
 def quat_space_reward_v3(env, state, action, info):
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_rp, w_rv = ws.get('w_p', 0.5), ws.get('w_v', 0.1), ws.get('w_e', 0.2), ws.get('w_rp', 0.1), ws.get('w_rv', 0.1)
     k_p, k_v, k_e = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20)
@@ -120,7 +120,7 @@ def quat_space_reward_v3(env, state, action, info):
 
 def deep_mimic_reward(env, state, action, info):
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_c = ws.get('w_p', 0.65), ws.get('w_v', 0.1), ws.get('w_e', 0.15), ws.get('w_c', 0.1)
     k_p, k_v, k_e, k_c = ws.get('k_p', 2), ws.get('k_v', 0.1), ws.get('k_e', 10), ws.get('k_c', 10)
@@ -167,7 +167,7 @@ def deep_mimic_reward_v2(env, state, action, info):
     # reward coefficients
     
 
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_rp, w_rq = ws.get('w_p', 0.65), ws.get('w_v', 0.1), ws.get('w_e', 0.15), ws.get('w_rp', 0.1), ws.get('w_rq', 0.1)
     k_p, k_v, k_e, k_rp, k_rq = ws.get('k_p', 2), ws.get('k_v', 0.1), ws.get('k_e', 10), ws.get('k_rp', 10), ws.get('k_rq', 10)
@@ -218,7 +218,7 @@ def deep_mimic_reward_v2(env, state, action, info):
 def deep_mimic_reward_v2_vf(env, state, action, info):
     # reward coefficients
     
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_rp, w_rq, w_vf = ws.get('w_p', 0.65), ws.get('w_v', 0.1), ws.get('w_e', 0.15), ws.get('w_rp', 0.1), ws.get('w_rq', 0.1), ws.get('w_vf', 0.1)
     k_p, k_v, k_e, k_rp, k_rq, k_vf= ws.get('k_p', 2), ws.get('k_v', 0.1), ws.get('k_e', 10), ws.get('k_rp', 10), ws.get('k_rq', 10), ws.get('k_vf', 10)
@@ -260,10 +260,10 @@ def deep_mimic_reward_v2_vf(env, state, action, info):
     rq_dist = multi_quat_norm_v2(multi_quat_diff(cur_bquat[:4], e_bquat[:4]))
     rq_reward = math.exp(-k_rq * (rq_dist ** 2))
 
-    if env.cfg.action_v == 2:
+    if env.cc_cfg.action_v == 2:
         vf = action[-env.vf_dim:]
         vf_reward = math.exp(-k_vf * (np.linalg.norm(vf) ** 2))
-    elif env.cfg.action_v == 3:
+    elif env.cc_cfg.action_v == 3:
         vf = action[-6:]
         vf_reward = math.exp(-k_vf * (np.linalg.norm(vf) ** 2))
     else:
@@ -282,7 +282,7 @@ def deep_mimic_reward_v2_vf_vq(env, state, action, info):
     # reward coefficients
     
 
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_rp, w_rq = ws.get('w_p', 0.65), ws.get('w_v', 0.1), ws.get('w_e', 0.15), ws.get('w_rp', 0.1), ws.get('w_rq', 0.1)
     k_p, k_v, k_e, k_rp, k_rq = ws.get('k_p', 2), ws.get('k_v', 0.1), ws.get('k_e', 10), ws.get('k_rp', 10), ws.get('k_rq', 10)
@@ -334,7 +334,7 @@ def deep_mimic_reward_v2_vf_vq(env, state, action, info):
 
 def multiplicable_reward(env, state, action, info):
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     k_p, k_v, k_e, k_rp, k_rq, k_rl, k_ra = ws.get('k_p', 2), ws.get('k_v', 0.1), ws.get('k_e', 10), ws.get('k_rp', 10), ws.get('k_rq', 10), ws.get('k_rl', 5.0), ws.get('k_ra', 0.5)
 
@@ -395,7 +395,7 @@ def multiplicable_reward(env, state, action, info):
 def local_world_reward_v1(env, state, action, info):
     expert = env.expert
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_we, w_c, w_r = ws.get('w_p', 0.4), ws.get('w_v', 0.05), ws.get('w_e', 0.15), ws.get('w_we', 0.1), ws.get('w_c', 0.1), ws.get('w_r', 0.2)
     k_p, k_v, k_e, k_we, k_c, k_r = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20), ws.get('k_we', 20), ws.get('k_c', 1000), ws.get('k_r', 1.0)
@@ -468,7 +468,7 @@ def local_world_reward_v1(env, state, action, info):
 def local_world_reward_v2(env, state, action, info):
     expert = env.expert
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_h, w_c, w_r = ws.get('w_p', 0.4), ws.get('w_v', 0.05), ws.get('w_e', 0.15), ws.get('w_h', 0.1), ws.get('w_c', 0.1), ws.get('w_r', 0.2)
     k_p, k_v, k_e, k_h, k_c, k_r = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20), ws.get('k_h', 20), ws.get('k_c', 1000), ws.get('k_r', 1.0)
@@ -541,7 +541,7 @@ def local_world_reward_v2(env, state, action, info):
 def local_world_reward_v3(env, state, action, info):
     expert = env.expert
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_h, w_c, w_r = ws.get('w_p', 0.4), ws.get('w_v', 0.05), ws.get('w_e', 0.15), ws.get('w_h', 0.1), ws.get('w_c', 0.1), ws.get('w_r', 0.2)
     k_p, k_v, k_e, k_h, k_c, k_r = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20), ws.get('k_h', 20), ws.get('k_c', 1000), ws.get('k_r', 1.0)
@@ -613,7 +613,7 @@ def local_world_reward_v3(env, state, action, info):
 
 def world_quat_space_reward(env, state, action, info):
     # reward coefficients
-    cfg = env.cfg
+    cfg, = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_c = ws.get('w_p', 0.6), ws.get('w_v', 0.1), ws.get('w_e', 0.2), ws.get('w_c', 0.1)
     k_p, k_v, k_e, k_c = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20), ws.get('k_c', 1000)
@@ -666,7 +666,7 @@ def world_quat_space_reward(env, state, action, info):
 
 def world_quat_space_reward_v2(env, state, action, info):
     # reward coefficients
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_p, w_v, w_e, w_c, w_r = ws.get('w_p', 0.3), ws.get('w_v', 0.1), ws.get('w_e', 0.3), ws.get('w_c', 0.1), ws.get('w_r', 0.2)
     k_p, k_v, k_e, k_c, k_r = ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20), ws.get('k_c', 1000), ws.get('k_r', 1.0)
@@ -739,7 +739,7 @@ def world_quat_space_reward_v2(env, state, action, info):
 
 def fine_tune_kin_action_reward(env, state, action, old_action, info):
     #root reward
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_rp, w_rq, w_a, w_p, w_v, w_end = ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_a', 0.05), ws.get('w_p', 1.0), ws.get('w_v', 1.0), ws.get('w_end', 0.0)
     k_rp, k_rq, k_a, k_p, k_v = ws.get('k_rp', 1.0), ws.get('k_rq', 1.0), ws.get('k_a', 1.0 ), ws.get('k_p', 1.0), ws.get('k_v', 0.1)
@@ -763,7 +763,7 @@ def fine_tune_kin_action_reward(env, state, action, old_action, info):
     e_bquat = env.convert_body_quat(env.get_kinematic_pose_ind(ind).copy())
     
 
-    if env.cfg.adap_weight:
+    if env.cc_cfg.adap_weight:
         e_hvel_local = env.get_expert_attr('hvel_local', ind + env.fix_start_ind)
         kin_lvel = env.get_kin_vel(ind).copy()        
         w_p = math.exp(-1.0 * np.linalg.norm(kin_lvel - e_hvel_local))
@@ -806,7 +806,7 @@ def fine_tune_kin_action_reward(env, state, action, old_action, info):
 
 def fine_tune_action_reward(env, state, action, old_action, info):
     #root reward
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_rp, w_rq, w_a, w_p, w_v, w_end = ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_a', 0.05), ws.get('w_p', 1.0), ws.get('w_v', 1.0), ws.get('w_end', 1.0)
     k_rp, k_rq, k_a, k_p, k_v = ws.get('k_rp', 1.0), ws.get('k_rq', 1.0), ws.get('k_a', 1.0 ), ws.get('k_p', 1.0), ws.get('k_v', 0.1)
@@ -862,7 +862,7 @@ def fine_tune_action_reward(env, state, action, old_action, info):
 
 def fine_tune_reward(env, state, action, info):
     #root reward
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.reward_weights
     w_rp, w_rq, w_a, w_p, w_v, w_end = ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_a', 0.05), ws.get('w_p', 1.0), ws.get('w_v', 1.0), ws.get('w_end', 1.0)
     k_rp, k_rq, k_a, k_p, k_v = ws.get('k_rp', 1.0), ws.get('k_rq', 1.0), ws.get('k_a', 1.0 ), ws.get('k_p', 1.0), ws.get('k_v', 0.1)
@@ -886,7 +886,7 @@ def fine_tune_reward(env, state, action, info):
     e_bquat = env.convert_body_quat(env.get_kinematic_pose_ind(ind).copy())
     
 
-    if env.cfg.adap_weight:
+    if env.cc_cfg.adap_weight:
         e_hvel_local = env.get_expert_attr('hvel_local', ind + env.fix_start_ind)
         kin_lvel = env.get_kin_vel(ind).copy()        
         kin_weight = math.exp(-1.0 * np.linalg.norm(kin_lvel - e_hvel_local))
@@ -931,7 +931,7 @@ def fine_tune_reward(env, state, action, info):
 def dynamic_supervision_v1(env, state, action, info):
     # V1 uses GT 
     # V1 now does not regulate the action using GT, and only has act_v 
-    cfg = env.cfg
+    cfg, cc_cfg = env.kin_cfg, env.cc_cfg
     ws = cfg.policy_specs['reward_weights']
     w_hp, w_hq, w_hv, w_p, w_jp, w_rp, w_rq, w_act_p, w_act_v = ws.get('w_hp', 1.0), ws.get('w_hq', 1.0),\
          ws.get('w_hv', 0.05), ws.get('w_p', 1.0), ws.get('w_jp', 1.0), ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_act_p', 1.0), ws.get('w_act_v', 1.0)
@@ -997,91 +997,62 @@ def dynamic_supervision_v1(env, state, action, info):
 
 
 def dynamic_supervision_v2(env, state, action, info):
-    # V2 uses no GT
-    # velocity loss is from AR-Net , reguralize the actions by running the model kinematically
-    # This thing makes 0 sense rn 
-    # cfg = env.cfg
-    # ws = cfg.policy_specs['reward_weights']
-    # w_hp, w_hq, w_hv, w_p, w_jp, w_rp, w_rq, w_act_v, w_act_p = ws.get('w_hp', 1.0), ws.get('w_hq', 1.0),\
-    #      ws.get('w_hv', 0.05), ws.get('w_p', 1.0), ws.get('w_jp', 1.0), ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_act_v', 1.0),  ws.get('w_act_p', 1.0)
-    # k_hp, k_hq, k_hv, k_p, k_jp, k_rp, k_rq, k_act_v, k_act_p = ws.get('k_hp', 1.0), ws.get('k_hq', 1.0), ws.get('k_hv', 1.0 ), \
-    #     ws.get('k_p', 1.0), ws.get('k_jp', 0.1), ws.get('k_rp', 0.1), ws.get('k_rq', 0.1), ws.get('k_act_v', 0.1), ws.get('k_act_p', 0.1)
-    # v_ord = ws.get('v_ord', 2)
+    # V2 uses GT and no dynamics-regulation. This is pretty much the same imitation reward (world_rfc_implicit_v2) + head. 
+    cfg, cc_cfg = env.kin_cfg, env.cc_cfg
+    ws = cfg.policy_specs['reward_weights']
+    w_hp, w_hq, w_p, w_v, w_e= ws.get('w_hp', 1.0), ws.get('w_hq', 1.0), ws.get('w_p', 0.6), ws.get('w_v', 0.1), ws.get('w_e', 0.2)
+    k_hp, k_hq, k_p, k_v, k_e= ws.get('k_hp', 1.0), ws.get('k_hq', 1.0), ws.get('k_p', 2), ws.get('k_v', 0.005), ws.get('k_e', 20) 
+    v_ord = ws.get('v_ord', 2)
     
-    # ind = env.cur_t
-    # # Head losses
-    # tgt_hpos = env.ar_context['head_pose'][ind]
-    # tgt_hvel = env.ar_context['head_vels'][ind]
-
-    # cur_hpos = env.get_head().copy()
-    # prev_hpos = env.prev_hpos.copy()
-
-    # hp_dist = np.linalg.norm(cur_hpos[:3] - tgt_hpos[:3])
-    # hp_reward = math.exp(-k_hp * (hp_dist ** 2)) 
+    # data from env
+    ind = env.cur_t
+    prev_bquat = env.prev_bquat
     
-    # # head orientation reward
-    # hq_dist = multi_quat_norm_v2(multi_quat_diff(cur_hpos[3:], tgt_hpos[3:])).mean()
-    # hq_reward = math.exp(-k_hq * (hq_dist ** 2))
+    # Current policy states
+    cur_bquat = env.get_body_quat()
+    cur_wbquat = env.get_wbody_quat()
+    cur_bangvel = get_angvel_fd(prev_bquat, cur_bquat, env.dt)
+    cur_wbpos = env.get_wbody_pos().reshape(-1, 3)
 
-    # # head velocity reward 
-    # # hpvel = (cur_hpos[:3] - prev_hpos[:3]) / env.dt
-    # # hqvel = get_angvel_fd(prev_hpos[3:], cur_hpos[3:], env.dt)
-    # # hpvel_dist = np.linalg.norm(hpvel - tgt_hvel[:3])
-    # # hqvel_dist = np.linalg.norm(hqvel - tgt_hvel[3:])
-    # # hv_reward = math.exp(-hpvel_dist - k_hv * hqvel_dist)
-    # hv_reward = 0
+    tgt_hpose = env.ar_context['head_pose'][ind]
+
+    cur_hpose = env.get_head().copy()
+    prev_hpos = env.prev_hpos.copy()
+
+    hpvel = (cur_hpose[:3] - prev_hpos[:3]) / env.dt
+
+    hp_dist = np.linalg.norm(cur_hpose[:3] - tgt_hpose[:3])
+    hp_reward = math.exp(-k_hp * (hp_dist ** 2)) 
     
-    # cur_bquat = env.get_body_quat()
-    # cur_wbpos = env.get_wbody_pos().reshape(-1, 3)
-    # tgt_bquat, tgt_wbpos = env.target['bquat'], env.target['wbpos']
+    # head orientation reward
+    hq_dist = multi_quat_norm_v2(multi_quat_diff(cur_hpose[3:], tgt_hpose[3:])).mean()
+    hq_reward = math.exp(-k_hq * (hq_dist ** 2))
 
-    # pose_quat_diff = multi_quat_norm_v2(multi_quat_diff(cur_bquat.flatten(), tgt_bquat.flatten())).mean()
-    # pose_pos_diff = np.linalg.norm(cur_wbpos - tgt_wbpos, axis = 1).mean()
-
-    # p_reward = math.exp(-k_p * (pose_quat_diff ** 2))
-    # jp_reward = math.exp(-k_jp * (pose_pos_diff ** 2))
-
-    # ## ARNet Action supervision
-    # act_qpos = env.target['qpos']
-    # tgt_qpos = env.ar_context['ar_qpos'][ind]
-
-    # act_bquat = env.target['bquat'].flatten()
-    # tgt_bquat = env.ar_context['ar_bquat'][ind].flatten()
-    # tgt_prev_bquat = env.ar_context['ar_bquat'][ind - 1].flatten()
-    # prev_bquat = env.prev_bquat
+    # Expert States
+    e_qpos, e_wbquat, e_bquat, e_wbpos = env.ar_context['qpos'][ind], \
+        env.ar_context['wbquat'][ind], env.ar_context['bquat'][ind],env.ar_context['wbpos'][ind].reshape(-1, 3)
+    e_prev_bquat = env.ar_context['bquat'][ind - 1].flatten()
+    e_bangvel = get_angvel_fd(e_prev_bquat, e_bquat, env.dt)
     
-
-    # rp_dist = np.linalg.norm(tgt_qpos[:3] - act_qpos[:3])
-    # rq_dist = multi_quat_norm_v2(multi_quat_diff(tgt_qpos[3:7], act_qpos[3:7])).mean()
-    # pose_action_diff = multi_quat_norm_v2(multi_quat_diff(tgt_bquat, act_bquat)).mean()
-
-    # cur_bangvel = get_angvel_fd(prev_bquat, cur_bquat, env.dt)
-    # tgt_bangvel = get_angvel_fd(tgt_prev_bquat, tgt_bquat, env.dt)
-    # vel_dist = np.linalg.norm(cur_bangvel - tgt_bangvel, ord=v_ord)
-    # act_v_reward = math.exp(-k_act_v * (vel_dist ** 2))
-
-    # rq_reward = math.exp(-k_rq * (rq_dist ** 2))
-    # rp_reward = math.exp(-k_rp * (rp_dist ** 2))
-    # act_p_reward = math.exp(-k_act_p * (pose_action_diff))
-    # # rq_reward = 0
-    # # rp_reward = 0
-    # # act_p_reward = 0
-
+    pose_diff = multi_quat_norm(multi_quat_diff(cur_bquat, e_bquat))
+    pose_diff[1:] *= cc_cfg.b_diffw
+    pose_dist = np.linalg.norm(pose_diff)
+    pose_reward = math.exp(-k_p * (pose_dist ** 2))
+    # velocity reward
+    vel_dist = np.linalg.norm(cur_bangvel - e_bangvel, ord=v_ord)
+    vel_reward = math.exp(-k_v * (vel_dist ** 2))
+    # ee reward
+    ee_dist = np.linalg.norm(cur_wbpos - e_wbpos)
+    ee_reward = math.exp(-k_e * (ee_dist ** 2))
     
-    # reward = w_hp * hp_reward + w_hq * hq_reward + w_hv * hv_reward + w_p * p_reward + \
-    #     w_jp * jp_reward + w_rp * rp_reward + w_rq * rq_reward  + w_act_v * act_v_reward + w_act_p * act_p_reward
-    # print(reward)
-    # if flags.debug:
-    #     import pdb; pdb.set_trace()
-    #     np.set_printoptions(precision=4, suppress=1)
-    #     print(np.array([hp_reward, hq_reward, hv_reward, p_reward, jp_reward, rp_reward, rq_reward, act_v_reward, act_p_reward]))
-    
-    return reward, np.array([hp_reward, hq_reward, hv_reward, p_reward, jp_reward, rp_reward, rq_reward, act_v_reward, act_p_reward])
+    # overall reward
+    reward = w_hp * hp_reward + w_hq * hq_reward + w_p * pose_reward + w_v * vel_reward + w_e * ee_reward 
+    return reward, np.array([hp_reward, hq_reward, pose_reward, vel_reward, ee_reward])
 
 def dynamic_supervision_v3(env, state, action, info):
     # V3 is V2 mutiplicative
     # This is wrong, very wrong. This does not work since you should compare the simulated with the estimated!!!!!!
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.policy_specs['reward_weights']
     # w_hp, w_hq, w_p, w_jp, w_rp, w_rq, w_act_p, w_act_v = ws.get('w_hp', 1.0), ws.get('w_hq', 1.0),\
     #     ws.get('w_p', 1.0), ws.get('w_jp', 1.0), ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_act_p', 1.0), ws.get('w_act_v', 1.0)
@@ -1151,7 +1122,7 @@ def dynamic_supervision_v3(env, state, action, info):
 
 def dynamic_supervision_v4(env, state, action, info):
     # V4 does not have the action terms (does not regularize the action)
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.policy_specs['reward_weights']
     w_hp, w_hq, w_hv, w_p, w_jp, w_rp, w_rq, w_act_p = ws.get('w_hp', 1.0), ws.get('w_hq', 1.0),\
          ws.get('w_hv', 0.05), ws.get('w_p', 1.0), ws.get('w_jp', 1.0), ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_act_p', 1.0)
@@ -1204,7 +1175,7 @@ def dynamic_supervision_v4(env, state, action, info):
 
 def dynamic_supervision_v5(env, state, action, info):
     # V5 is V4 with multiplicative reward
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.policy_specs['reward_weights']
     w_hp, w_hq, w_hv, w_p, w_jp, w_rp, w_rq, w_act_p = ws.get('w_hp', 1.0), ws.get('w_hq', 1.0),\
          ws.get('w_hv', 0.05), ws.get('w_p', 1.0), ws.get('w_jp', 1.0), ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_act_p', 1.0)
@@ -1258,7 +1229,7 @@ def dynamic_supervision_v5(env, state, action, info):
 
 def dynamic_supervision_v6(env, state, action, info):
     # no head reward anymore 
-    cfg = env.cfg
+    cfg = env.cc_cfg
     ws = cfg.policy_specs['reward_weights']
     w_hp, w_hq, w_hv, w_p, w_jp, w_rp, w_rq, w_act_p, w_act_v = ws.get('w_hp', 1.0), ws.get('w_hq', 1.0),\
          ws.get('w_hv', 0.05), ws.get('w_p', 1.0), ws.get('w_jp', 1.0), ws.get('w_rp', 1.0), ws.get('w_rq', 1.0), ws.get('w_act_p', 1.0), ws.get('w_act_v', 1.0)
@@ -1311,7 +1282,6 @@ def dynamic_supervision_v6(env, state, action, info):
         print(reward, np.array([p_reward, jp_reward, act_v_reward]))
     
     return reward, np.array([hp_reward, hq_reward, p_reward, jp_reward, act_v_reward])
-
 
 def constant_reward(env, state, action, info):
     reward = 1.0

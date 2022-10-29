@@ -23,7 +23,7 @@ import time
 from kin_poly.utils.statear_smpl_config import Config
 from uhc.khrylib.utils import *
 from uhc.khrylib.rl.utils.visualizer import Visualizer
-from uhc.utils.config import Config as CC_Config
+from uhc.utils.config_utils.copycat_config import Config as CC_Config
 from mujoco_py import load_model_from_path, MjSim
 from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
 from kin_poly.utils.flags import flags
@@ -290,7 +290,7 @@ if __name__ == "__main__":
 
     flags.debug = args.debug
         
-    cc_cfg = CC_Config(args.cc_cfg, "", create_dirs=False, mujoco_path = "assets/mujoco_models/%s.xml")
+    cc_cfg = CC_Config(cfg_id=args.cc_cfg, create_dirs=False, base_dir="",)
     if args.wild:
         cc_cfg.mujoco_model_file = "assets/mujoco_models/humanoid_smpl_neutral_mesh_all.xml"
     else:

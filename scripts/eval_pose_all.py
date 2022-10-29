@@ -23,7 +23,7 @@ from kin_poly.utils.statear_smpl_config import Config
 from tqdm import tqdm
 
 from uhc.envs.humanoid_im import HumanoidEnv as CC_HumanoidEnv
-from uhc.utils.config import Config as CC_Config
+from uhc.utils.config_utils.copycat_config import Config as CC_Config
 from uhc.data_loaders.dataset_smpl_obj import DatasetSMPLObj
 from uhc.khrylib.rl.utils.visualizer import Visualizer
 import joblib
@@ -550,7 +550,7 @@ if __name__ == "__main__":
 
     logger = create_logger(os.path.join("results", 'log_eval.txt'))
 
-    cc_cfg = CC_Config("uhc", "", create_dirs=False)
+    cc_cfg = CC_Config(cfg_id = "uhc", create_dirs=False, base_dir="",)
 
     if args.wild:
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
@@ -560,8 +560,6 @@ if __name__ == "__main__":
     data_loader = DatasetSMPLObj(cc_cfg.data_specs, data_mode="test")
     init_expert = data_loader.sample_seq()
     env = CC_HumanoidEnv(cc_cfg, init_expert = init_expert, data_specs = cc_cfg.data_specs, mode="test")
-
-
 
     action_one_hot_dict = {
         "sit": np.array([1,0,0,0]),

@@ -274,11 +274,10 @@ class PolicyAR(Policy):
                 pbar.set_description_str(f"Init loss: {loss.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}] lr: {self.scheduler.get_lr()[0]:.5f}")
             
 
-    def update_supervised(self, all_state, target_qpos, curr_qpos, num_epoch = 20):
+    def update_supervised_step(self, all_state, target_qpos, curr_qpos, num_epoch = 20):
         pbar = tqdm(range(num_epoch) )
         for _ in pbar:
             _, action_mean, _ = self.forward(all_state)
-
             self.traj_ar_net.set_sim(curr_qpos)
             next_qpos, _ = self.traj_ar_net.step(action_mean)
             loss, loss_idv = self.traj_ar_net.compute_loss_lite(next_qpos, target_qpos)

@@ -76,7 +76,6 @@ class Config(Base_Config):
         self.mujoco_model_file = self.find_asset(
             mujoco_path % self.cfg_dict["mujoco_model"]
         )
-
         self.vis_model_file = self.find_asset(mujoco_path % self.cfg_dict["vis_model"])
 
         self.env_start_first = self.cfg_dict.get("env_start_first", False)
@@ -107,7 +106,6 @@ class Config(Base_Config):
         self.residual_force_mode = self.cfg_dict.get("residual_force_mode", "implicit")
         self.residual_force_bodies = self.cfg_dict.get("residual_force_bodies", "all")
         self.residual_force_torque = self.cfg_dict.get("residual_force_torque", True)
-        self.rfc_decay = self.cfg_dict.get("rfc_decay", False)
 
         # meta pd
         self.meta_pd = self.cfg_dict.get("meta_pd", False)

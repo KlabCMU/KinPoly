@@ -14,7 +14,7 @@ def get_expert(expert_qpos, expert_meta, env):
         env.data.qpos[:76] = qpos
         env.sim.forward()
         rq_rmh = de_heading(qpos[3:7])
-        ee_pos = env.get_ee_pos(env.cfg.obs_coord)
+        ee_pos = env.get_ee_pos(env.cc_cfg.obs_coord)
         wbpos = env.get_wbody_pos()
         wbquat = env.get_wbody_quat()
         
@@ -29,7 +29,7 @@ def get_expert(expert_qpos, expert_meta, env):
             qvel = get_qvel_fd_new(prev_qpos, qpos, env.dt)
             qvel = qvel.clip(-10.0, 10.0)
             rlinv = qvel[:3].copy()
-            rlinv_local = transform_vec(qvel[:3].copy(), qpos[3:7], env.cfg.obs_coord)
+            rlinv_local = transform_vec(qvel[:3].copy(), qpos[3:7], env.cc_cfg.obs_coord)
             rangv = qvel[3:6].copy()
             expert['qvel'].append(qvel)
             expert['rlinv'].append(rlinv)

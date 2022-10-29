@@ -9,6 +9,7 @@ from uhc.khrylib.rl.core.policy_gaussian import PolicyGaussian
 from uhc.khrylib.rl.core.critic import Value
 from uhc.khrylib.models.mlp import MLP
 from uhc.core.policy_mcp import PolicyMCP
+from uhc.envs.humanoid_im import HumanoidEnv
 from kin_poly.utils.numpy_smpl_humanoid import Humanoid
 
 from gym import spaces
@@ -19,25 +20,16 @@ from scipy.linalg import cho_solve, cho_factor
 import joblib
 from kin_poly.utils.flags import flags
 
-
-class HumanoidAREnv(mujoco_env.MujocoEnv):
-    # Wrapper class that wraps around uhc agent
-
+class HumanoidAREnv(HumanoidEnv):
     def __init__(self, cfg, cc_cfg, init_context, cc_iter = -1, mode = "train", wild = False, ar_mode = False):
         mujoco_env.MujocoEnv.__init__(self, cc_cfg.mujoco_model_file, 15)
         self.cc_cfg = cc_cfg
-        self.cfg = cfg
+        self.kin_cfg = cfg
         self.wild = wild
+        self.setup_constants(cc_cfg, cc_cfg.data_specs, mode = mode, no_root = False)
 
-        self.set_cam_first = set()
         # env specific
-        self.base_rot = cc_cfg.data_specs.get("base_rot", [0.7071, 0.7071, 0.0, 0.0])
-        self.qpos_lim = 76
-        self.qvel_lim = 75
-        self.body_lim = 25
         self.num_obj = self.get_obj_qpos().shape[0]//7
-        self.end_reward = 0.0
-        self.start_ind = 0
         self.action_index_map = [0, 7, 21, 28]
         self.action_len = [7, 14, 7, 7]
         self.action_names = ["sit", "push", "avoid", "step"]
@@ -50,18 +42,17 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
         self.set_model_params()
         self.load_context(init_context)
         self.policy_v = cfg.policy_specs['policy_v']
-        self.scheduled_smpling = cfg.policy_specs.get("scheduled_smpling", 0)
-        self.pose_delta = self.cfg.model_specs.get("pose_delta", False)
-        self.ar_model_v = self.cfg.model_specs.get("model_v", 1)
+        self.scheduled_sampling = cfg.policy_specs.get("scheduled_smpling", 0)
+        self.pose_delta = self.kin_cfg.model_specs.get("pose_delta", False)
+        self.ar_model_v = self.kin_cfg.model_specs.get("model_v", 1)
         self.ar_mode = ar_mode
+        self.body_diff_thresh = cfg.policy_specs.get('body_diff_thresh', 10)
+        self.body_diff_gt_thresh = cfg.policy_specs.get('body_diff_gt_thresh', 12)
 
-        print(f"scheduled_sampling: {self.scheduled_smpling}")
+        print(f"scheduled_sampling: {self.scheduled_sampling}")
 
-        self.mode = mode
-        
         self.set_spaces()
         self.jpos_diffw = np.array(cfg.reward_weights.get("jpos_diffw", [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]))[:, None]
-
 
         ''' Load CC Controller '''
         state_dim = self.get_cc_obs().shape[0]
@@ -80,10 +71,12 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
             cp_path = '%s/iter_%04d.p' % (cc_cfg.model_dir, cc_iter)
         print(('loading model from checkpoint: %s' % cp_path))
         model_cp = pickle.load(open(cp_path, "rb"))
-        self.cc_running_state = ZFilter((model_cp['running_state']['mean'].shape[0],), clip=5)
-        self.cc_running_state.set_mean_std(model_cp['running_state']['mean'], model_cp['running_state']['std'], model_cp['running_state']['n']) 
-        self.cc_policy.load_state_dict(model_cp['policy_dict'])
-        self.cc_value_net.load_state_dict(model_cp['value_dict'])
+        running_state = ZFilter((state_dim,), clip=5)
+        running_state.set_mean_std(model_cp['running_state']['mean'], model_cp['running_state']['std'], model_cp['running_state']['n'])
+        self.cc_running_state = running_state
+        if not self.kin_cfg.joint_controller:
+            self.cc_policy.load_state_dict(model_cp['policy_dict'])
+            self.cc_value_net.load_state_dict(model_cp['value_dict'])
 
 
     def load_context(self, data_dict):
@@ -133,130 +126,10 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
             cc_obs = self.get_full_obs()
         elif self.cc_cfg.obs_v == 1:
             cc_obs = self.get_full_obs_v1()
+        elif self.cc_cfg.obs_v == 2:
+            cc_obs = self.get_full_obs_v2()
         return cc_obs
-
-
-    def get_full_obs(self):
-        data = self.data
-        qpos = data.qpos[:self.qpos_lim].copy()
-        qvel = data.qvel[:self.qvel_lim].copy()
-        # transform velocity
-        qvel[:3] = transform_vec(qvel[:3], qpos[3:7], self.cc_cfg.obs_coord).ravel()
-        obs = []
-        # pos
-        if self.cc_cfg.obs_heading:
-            obs.append(np.array([get_heading(qpos[3:7])]))
-        if self.cc_cfg.root_deheading:
-            qpos[3:7] = de_heading(qpos[3:7])
-        obs.append(qpos[2:])
-        # vel
-        if self.cc_cfg.obs_vel == 'root':
-            obs.append(qvel[:6])
-        elif self.cc_cfg.obs_vel == 'full':
-            obs.append(qvel)
-
-        obs.append(self.get_target_kin_pose())
-
-        obs = np.concatenate(obs)
-        return obs
-
-    def remove_base_rot(self, quat):
-        return quaternion_multiply(quat, quaternion_inverse(self.base_rot))
-
-    def get_full_obs_v1(self):
-        data = self.data
-        qpos = data.qpos[:self.qpos_lim].copy()
-        qvel = data.qvel[:self.qvel_lim].copy()
-        
-        # transform velocity
-        qvel[:3] = transform_vec(qvel[:3], qpos[3:7], self.cc_cfg.obs_coord).ravel() # body angular velocity 
-        obs = []
-
-        curr_root_quat = self.remove_base_rot(qpos[3:7])
-        hq = get_heading_q(curr_root_quat)
-        obs.append(hq) # obs: heading (4,)
-
-        ################ Body pose and z ################
-        target_body_qpos = self.get_target_qpos() # target body pose (1, 76)
-        target_root_quat = self.remove_base_rot(target_body_qpos[3:7])
-
-        qpos[3:7] = de_heading(curr_root_quat) # deheading the root 
-        diff_qpos  = target_body_qpos.copy()
-        diff_qpos[2] -= qpos[2]
-        diff_qpos[7:] -= qpos[7:]
-        diff_qpos[3:7] = quaternion_multiply(target_root_quat, quaternion_inverse(curr_root_quat))
-
-        obs.append(target_body_qpos[2:]) # obs: target z + body pose (1, 70)
-        obs.append(qpos[2:]) # obs: target z +  body pose (1, 70)
-        obs.append(diff_qpos[2:]) # obs:  difference z + body pose (1, 70)
-        
-        ################ vels ################
-        # vel
-        qvel[:3] = transform_vec(qvel[:3], curr_root_quat, self.cc_cfg.obs_coord).ravel()
-        if self.cc_cfg.obs_vel == 'root':
-            obs.append(qvel[:6])
-        elif self.cc_cfg.obs_vel == 'full':
-            obs.append(qvel)
-
-        ################ relative heading and root position ################
-        rel_h = get_heading(target_root_quat) - get_heading(curr_root_quat)
-        if rel_h > np.pi:
-            rel_h -= 2 * np.pi
-        if rel_h < -np.pi:
-            rel_h += 2 * np.pi
-        obs.append(np.array([rel_h])) # obs: heading difference in angles (1, 1)
-
-        rel_pos = target_root_quat[:3] - qpos[:3]
-        rel_pos = transform_vec(rel_pos, curr_root_quat, self.cc_cfg.obs_coord).ravel()
-        obs.append(rel_pos[:2]) # obs: relative x, y difference (1, 2)
-        
-        ################ target/difference joint/com positions ################
-        target_jpos = self.get_target_joint_pos()
-        curr_jpos = self.data.body_xpos[1:self.body_lim].copy()
-        r_jpos = curr_jpos - qpos[None, :3] 
-        r_jpos = transform_vec_batch(r_jpos, curr_root_quat, self.cc_cfg.obs_coord) # body frame position 
-        obs.append(r_jpos.ravel()) # obs: target body frame joint position (1, 72)
-
-        diff_jpos = target_jpos.reshape(-1, 3) - curr_jpos
-        diff_jpos = transform_vec_batch(diff_jpos, curr_root_quat, self.cc_cfg.obs_coord)
-        obs.append(diff_jpos.ravel()) # obs: current diff body frame joint position  (1, 72)
-
-        target_com = self.get_target_com_pos() # body frame position
-        curr_com = self.data.xipos[1:self.body_lim].copy()
-        
-        r_com = curr_com - qpos[None, :3]
-        r_com = transform_vec_batch(r_com, curr_root_quat, self.cc_cfg.obs_coord)
-        obs.append(r_com.ravel()) # obs: current target body frame com position  (1, 72)
-        diff_com = target_com.reshape(-1, 3) - curr_com
-        diff_com = transform_vec_batch(diff_com, curr_root_quat, self.cc_cfg.obs_coord)
-        obs.append(diff_com.ravel()) # obs: current body frame com position (1, 72)
-        
-
-        ################ target/relative global joint quaternions ################
-        # target_quat = self.get_expert_bquat().reshape(-1, 4)
-        target_quat = self.get_target_wbquat().reshape(-1, 4)
-        
-        cur_quat = self.data.body_xquat.copy()[1:self.body_lim]
-
-        if cur_quat[0, 0] == 0:
-            cur_quat = target_quat.copy()
-
-        r_quat = cur_quat.copy()
-        for i in range(r_quat.shape[0]):
-            r_quat[i] = quaternion_multiply(quaternion_inverse(hq), r_quat[i])
-        obs.append(r_quat.ravel()) # obs: current target body quaternion (1, 92)
-
-        rel_quat = np.zeros_like(cur_quat)
-        for i in range(rel_quat.shape[0]):
-            rel_quat[i] = quaternion_multiply(quaternion_inverse(cur_quat[i]), target_quat[i])
-        obs.append(rel_quat.ravel()) # obs: current target body quaternion (1, 92)
-
-        obs = np.concatenate(obs)
-        return obs
-
-    def get_head_idx(self):
-        return self.model._body_name2id["Head"]  - 1
-
+   
     def get_ar_obs_v1(self):
         t = self.cur_t 
         curr_action = self.ar_context["action_one_hot"][0]
@@ -276,13 +149,13 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
         pred_hrot_heading = pred_hrot
 
 
-        if self.cfg.use_context or self.cfg.use_of: 
+        if self.kin_cfg.use_context or self.kin_cfg.use_of: 
             if "context_feat_rnn" in self.ar_context:
                 obs.append(self.ar_context['context_feat_rnn'][t, :])
             else:
                 obs.append(np.zeros((256)))
 
-        if self.cfg.use_head:
+        if self.kin_cfg.use_head:
             # get target head
             t_hrot = self.ar_context['head_pose'][t, 3:].copy()
             t_hpos = self.ar_context['head_pose'][t, :3].copy()
@@ -296,8 +169,8 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
             diff_hpos = transform_vec(diff_hpos, pred_hrot_heading, "heading")
             diff_hrot = quaternion_multiply(quaternion_inverse(t_hrot), pred_hrot)
         
-        
         q_heading = get_heading_q(pred_hrot_heading).copy()
+
         obj_pos = self.get_obj_qpos(action_one_hot=curr_action)[:3] 
         obj_rot = self.get_obj_qpos(action_one_hot=curr_action)[3:7]
 
@@ -309,27 +182,26 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
         # state 
         # order of these matters !!!
         obs.append(curr_qpos_local[2:]) # current height + local body orientation + body pose self.qpose_lm  74
-        if self.cfg.use_vel:
+        if self.kin_cfg.use_vel:
             obs.append(curr_qvel) # current velocities 75
 
-        if self.cfg.use_head:
+        if self.kin_cfg.use_head:
             obs.append(diff_hpos) # diff head position 3
             obs.append(diff_hrot) # diff head rotation 4
 
-        obs.append(pred_obj_relative_head) # predicted object relative to head 7
+        if self.kin_cfg.use_obj: obs.append(pred_obj_relative_head) # predicted object relative to head 7
 
-        if self.cfg.use_head:
+        if self.kin_cfg.use_head:
             obs.append(t_havel)   # target head angular velocity 3
             obs.append(t_hlvel)    # target head linear  velocity 3
-            obs.append(t_obj_relative_head)  # target object relative to head 7 
+            if self.kin_cfg.use_obj:  obs.append(t_obj_relative_head)  # target object relative to head 7 
 
-        if self.cfg.use_action and self.ar_model_v > 0:
+        if self.kin_cfg.use_action and self.ar_model_v > 0:
             obs.append(curr_action)
 
-        if self.cfg.use_of:
+        if self.kin_cfg.use_of:
             # Not sure what to do yet......
             obs.append(self.ar_context['of'][t, :])
-        
         
         # obs.append(curr_qpos)
         # obs.append(self.get_obj_qpos())
@@ -339,188 +211,6 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
         obs = np.concatenate(obs)
         
         return obs
-
-    def get_full_obs_v1_notrans(self):
-        # no root translation model
-        pass
-
-    def get_ee_pos(self, transform):
-        data = self.data
-        ee_name = ['L_Toe', 'R_Toe', 'L_Wrist', 'R_Wrist', 'Head']
-        ee_pos = []
-        root_pos = data.qpos[:3]
-        root_q = data.qpos[3:7].copy()
-        for name in ee_name:
-            bone_id = self.model._body_name2id[name]
-            bone_vec = self.data.body_xpos[bone_id]
-            if transform is not None:
-                bone_vec = bone_vec - root_pos
-                bone_vec = transform_vec(bone_vec, root_q, transform)
-            ee_pos.append(bone_vec)
-        return np.concatenate(ee_pos)
-
-    def get_body_quat(self):
-        qpos = self.get_humanoid_qpos()
-        body_quat = [qpos[3:7]]
-        for body in self.model.body_names[1:self.body_lim]:
-            if body == 'Pelvis' or not body in self.body_qposaddr:
-                continue
-            start, end = self.body_qposaddr[body]
-            euler = np.zeros(3)
-            euler[:end - start] = qpos[start:end]
-            quat = quaternion_from_euler(euler[0], euler[1], euler[2])
-            body_quat.append(quat)
-        body_quat = np.concatenate(body_quat)
-        return body_quat
-
-    def get_wbody_quat(self, selectList=None):
-        body_pos = []
-        if selectList is None:
-            # body_names = self.model.body_names[1:] # ignore plane
-            return self.data.body_xquat[1:self.body_lim].copy().ravel()
-        else:
-            body_names = selectList
-        for body in body_names: 
-            bone_idx = self.model._body_name2id[body]
-            bone_vec = self.data.body_xquat[bone_idx]
-            body_pos.append(bone_vec)
-        return np.concatenate(body_pos)
-
-    def get_com(self):
-        return self.data.subtree_com[0, :].copy()
-
-    def get_head(self):
-        bone_id = self.model._body_name2id['Head']
-        head_pos = self.data.body_xpos[bone_id]
-        head_quat = self.data.body_xquat[bone_id]
-        return np.concatenate((head_pos, head_quat))
-
-    def get_wbody_pos(self, selectList=None):
-        body_pos = []
-        if selectList is None:
-            # body_names = self.model.body_names[1:] # ignore plane
-            return self.data.body_xpos[1:self.body_lim].copy().ravel()
-        else:
-            body_names = selectList
-        for body in body_names: 
-            bone_idx = self.model._body_name2id[body]
-            bone_vec = self.data.body_xpos[bone_idx]
-            body_pos.append(bone_vec)
-        return np.concatenate(body_pos)
-
-
-    def get_full_body_com(self, selectList=None):
-        body_pos = []
-        if selectList is None:
-            body_names = self.model.body_names[1:self.body_lim] # ignore plane
-        else:
-            body_names = selectList
-        
-        for body in body_names: 
-            bone_vec = self.data.get_body_xipos(body)
-            body_pos.append(bone_vec)
-        
-        return np.concatenate(body_pos)
-
-    def compute_desired_accel(self, qpos_err, qvel_err, k_p, k_d):
-        dt = self.model.opt.timestep
-        nv = self.model.nv
-        
-        M = np.zeros(nv * nv)
-        mjf.mj_fullM(self.model, M, self.data.qM)
-        M.resize(nv, nv)
-        M = M[:self.qvel_lim, :self.qvel_lim]
-        C = self.data.qfrc_bias.copy()[:self.qvel_lim]
-        K_p = np.diag(k_p)
-        K_d = np.diag(k_d)
-        q_accel = cho_solve(cho_factor(M + K_d*dt, overwrite_a=True, check_finite=False),
-                            -C[:, None] - K_p.dot(qpos_err[:, None]) - K_d.dot(qvel_err[:, None]), overwrite_b=True, check_finite=False)
-        return q_accel.squeeze()
-
-    def compute_torque(self, ctrl):
-        cfg = self.cc_cfg
-        dt = self.model.opt.timestep
-
-        ctrl_joint = ctrl[:self.ndof] * cfg.a_scale
-        qpos = self.get_humanoid_qpos()
-        qvel = self.get_humanoid_qvel()
-        if self.cc_cfg.action_v == 1 or self.cc_cfg.action_v == 2 or self.cc_cfg.action_v == 3:
-            base_pos = self.get_target_kin_pose()
-            while np.any(base_pos - qpos[7:] > np.pi):
-                base_pos[base_pos - qpos[7:] > np.pi] -= 2 * np.pi
-            while np.any(base_pos - qpos[7:] < -np.pi):
-                base_pos[base_pos - qpos[7:] < -np.pi] += 2 * np.pi
-
-        elif self.cc_cfg.action_v == 0:
-            base_pos = cfg.a_ref
-        target_pos = base_pos + ctrl_joint
-
-        k_p = np.zeros(qvel.shape[0])
-        k_d = np.zeros(qvel.shape[0])
-
-        k_p[6:] = cfg.jkp
-        k_d[6:] = cfg.jkd
-        qpos_err = np.concatenate((np.zeros(6), qpos[7:] + qvel[6:]*dt - target_pos))
-        qvel_err = qvel
-        q_accel = self.compute_desired_accel(qpos_err, qvel_err, k_p, k_d)
-        qvel_err += q_accel * dt
-        torque = -cfg.jkp * qpos_err[6:] - cfg.jkd * qvel_err[6:]
-
-        return torque
-
-    """ RFC-Explicit """
-    def rfc_explicit(self, vf):
-        qfrc = np.zeros_like(self.data.qfrc_applied)
-        for i, body in enumerate(self.vf_bodies):
-            body_id = self.model._body_name2id[body]
-            contact_point = vf[i*self.body_vf_dim: i*self.body_vf_dim + 3]
-            force = vf[i*self.body_vf_dim + 3: i*self.body_vf_dim + 6] * self.cc_cfg.residual_force_scale
-            torque = vf[i*self.body_vf_dim + 6: i*self.body_vf_dim + 9] * self.cc_cfg.residual_force_scale if self.cc_cfg.residual_force_torque else np.zeros(3)
-            contact_point = self.pos_body2world(body, contact_point)
-            force = self.vec_body2world(body, force)
-            torque = self.vec_body2world(body, torque)
-            mjf.mj_applyFT(self.model, self.data, force, torque, contact_point, body_id, qfrc)
-        self.data.qfrc_applied[:] = qfrc
-
-    """ RFC-Implicit """
-    def rfc_implicit(self, vf):
-        vf *= self.cc_cfg.residual_force_scale
-        curr_root_quat = self.remove_base_rot(self.get_humanoid_qpos()[3:7])
-        hq = get_heading_q(curr_root_quat)
-        # hq = get_heading_q(self.get_humanoid_qpos()[3:7])
-        vf[:3] = quat_mul_vec(hq, vf[:3])
-        vf = np.clip(vf, -self.cc_cfg.residual_force_lim, self.cc_cfg.residual_force_lim)
-        self.data.qfrc_applied[:vf.shape[0]] = vf
-
-    def do_simulation(self, action, n_frames):
-        t0 = time.time()
-        cfg = self.cc_cfg
-        for i in range(n_frames):
-            ctrl = action
-            if cfg.action_type == 'position':
-                torque = self.compute_torque(ctrl)
-            elif cfg.action_type == 'torque':
-                torque = ctrl * cfg.a_scale
-            
-            torque = np.clip(torque, -cfg.torque_lim, cfg.torque_lim)
-            self.data.ctrl[:] = torque
-
-            """ Residual Force Control (RFC) """
-            if cfg.residual_force:
-                vf = ctrl[-self.vf_dim:].copy()
-                if cfg.residual_force_mode == 'implicit':
-                    self.rfc_implicit(vf)
-                else:
-                    self.rfc_explicit(vf)
-
-            try:
-                self.sim.step()
-            except Exception as e:
-                print(e, action)
-            
-
-        if self.viewer is not None:
-            self.viewer.sim_time = time.time() - t0
 
     def step_ar(self, a, dt = 1/30):
         qpos_lm = 74
@@ -550,8 +240,6 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
         next_qpos[3:7] = new_rot
         return next_qpos
 
-
-
     def step(self, a):
         cfg = self.cc_cfg
         # record prev state
@@ -567,41 +255,27 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
 
         self.target = self.smpl_humanoid.qpos_fk(next_qpos) # forming target from arnet
         
-        # if flags.debug:
-            # next_qpos = self.step_ar(self.ar_context['target'][self.cur_t]) # 
-            # self.target = self.smpl_humanoid.qpos_fk(self.ar_context['qpos'][self.cur_t + 1]) # GT
-            # self.target = self.smpl_humanoid.qpos_fk(self.ar_context['ar_qpos'][self.cur_t + 1]) # Debug
         if self.ar_mode:
             self.target = self.smpl_humanoid.qpos_fk(self.ar_context['ar_qpos'][self.cur_t + 1]) # 
         
         cc_obs = self.get_cc_obs()
         cc_obs = self.cc_running_state(cc_obs, update=False)
-        cc_a = self.cc_policy.select_action(torch.from_numpy(cc_obs)[None, ], mean_action=True)[0].numpy() # CC step
+        mean_action = self.mode == "test" or (self.mode == "train" and self.kin_cfg.joint_controller)
+        cc_action = self.cc_policy.select_action(torch.from_numpy(cc_obs)[None, ], mean_action=mean_action)[0].numpy() # CC step
         
         if flags.debug:
-            # self.do_simulation(cc_a, self.frame_skip)
-            # self.data.qpos[:self.qpos_lim] = self.get_target_qpos() # debug
-            # self.data.qpos[:self.qpos_lim] = self.ar_context['qpos'][self.cur_t + 1] # debug
-            # self.data.qpos[:self.qpos_lim] = self.gt_targets['qpos'][self.cur_t + 1] # debug
             self.data.qpos[:self.qpos_lim] = self.ar_context['ar_qpos'][self.cur_t + 1] # ARNet Qpos
             self.sim.forward() # debug
 
         else:
-            # if self.mode == "train" and self.scheduled_smpling != 0 and np.random.binomial(1, self.scheduled_smpling):
-            #     self.data.qpos[:self.qpos_lim] = self.ar_context['qpos'][self.cur_t + 1]
-            #     self.data.qvel[:self.qvel_lim] = self.ar_context['qvel'][self.cur_t + 1]
-
-            #     self.sim.forward() # debug
-            # else:
-                # self.do_simulation(cc_a, self.frame_skip)
-            self.do_simulation(cc_a, self.frame_skip)
+            self.do_simulation(cc_action, self.frame_skip)
 
 
         self.cur_t += 1
 
         self.bquat = self.get_body_quat()
         # get obs
-        head_pos = self.get_body_com('Head')
+        head_pos = self.get_body_com(['Head'])
         reward = 1.0
         
         if cfg.env_term_body == 'body':
@@ -610,14 +284,14 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
 
             if self.wild:
                 body_diff = self.calc_body_diff()
-                fail = body_diff > 8 
+                fail = body_diff > self.body_diff_thresh
             else:
                 body_diff = self.calc_body_diff()
                 if self.mode == "train":
                     body_gt_diff = self.calc_body_gt_diff()
-                    fail = body_diff > 10 or body_gt_diff > 12
+                    fail = body_diff > self.body_diff_thresh or body_gt_diff > self.body_diff_gt_thresh
                 else:
-                    fail = body_diff > 10 
+                    fail = body_diff > self.body_diff_thresh
 
             
             # if flags.debug:
@@ -628,14 +302,13 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
         
         end =  (self.cur_t >= cfg.env_episode_len) or (self.cur_t + self.start_ind >= self.ar_context['len'])
         done = fail or end
-
         # if done: # ZL: Debug
         #     exit()
             # print("done!!!", self.cur_t, self.ar_context['len'] )
 
         percent = self.cur_t/self.ar_context['len']
         obs = self.get_obs()
-        return obs, reward, done, {'fail': fail, 'end': end, "percent": percent}
+        return obs, reward, done, {'fail': fail, 'end': end, "percent": percent, "cc_action": cc_action, "cc_state": cc_obs}
 
     def set_mode(self, mode):
         self.mode = mode
@@ -726,35 +399,35 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
 
 
 
-    def get_target_qpos(self):
+    def get_expert_qpos(self, delta_t = 0):
         expert_qpos = self.target['qpos'].copy()
         return expert_qpos 
 
     
-    def get_target_kin_pose(self):
-        return self.get_target_qpos()[7:]
+    def get_target_kin_pose(self, delta_t = 0):
+        return self.get_expert_qpos()[7:]
 
-    def get_target_joint_pos(self):
+    def get_expert_joint_pos(self, delta_t = 0):
         # world joint position 
         wbpos = self.target['wbpos']
         return wbpos
 
-    def get_target_com_pos(self):
+    def get_expert_com_pos(self, delta_t = 0):
         # body joint position 
         body_com = self.target['body_com']
         return body_com
 
-    def get_target_bquat(self):
+    def get_expert_bquat(self, delta_t = 0):
         bquat = self.target['bquat']
         return bquat
 
-    def get_target_wbquat(self):
+    def get_expert_wbquat(self, delta_t = 0):
         wbquat = self.target['wbquat']
         return wbquat
 
     def calc_body_diff(self):
         cur_wbpos = self.get_wbody_pos().reshape(-1, 3)
-        e_wbpos = self.get_target_joint_pos().reshape(-1, 3)
+        e_wbpos = self.get_expert_joint_pos().reshape(-1, 3)
         diff = cur_wbpos - e_wbpos
         diff *= self.jpos_diffw
         jpos_dist = np.linalg.norm(diff, axis=1).sum()
@@ -817,6 +490,19 @@ class HumanoidAREnv(mujoco_env.MujocoEnv):
 
     def get_obj_qvel(self):
         return self.data.qvel.copy()[self.qvel_lim:]
+
+    def get_body_com(self, selectList=None):
+        body_pos = []
+        if selectList is None:
+            body_names = self.model.body_names[1:self.body_lim] # ignore plane
+        else:
+            body_names = selectList
+        
+        for body in body_names: 
+            bone_vec = self.data.get_body_xipos(body)
+            body_pos.append(bone_vec)
+        
+        return np.concatenate(body_pos)
 
     
 

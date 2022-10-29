@@ -10,4 +10,5 @@ class TrajBatchEgo(TrajBatch):
         self.gt_target_qpos = np.stack(next(self.batch))
         self.curr_qpos = np.stack(next(self.batch))
         self.res_qpos = np.stack(next(self.batch))
-
+        self.cc_action = np.stack(next(self.batch))
+        self.cc_state = np.stack(next(self.batch))

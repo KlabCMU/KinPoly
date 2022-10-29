@@ -34,10 +34,10 @@ class Agent:
 
     def seed_worker(self, pid):
         if pid > 0:
-            torch.manual_seed(torch.randint(0, 5000, (1,)) * pid)
-            np.random.seed(np.random.randint(5000)* pid)
+            torch.manual_seed(torch.randint(0, 5000, (1, )) * pid)
+            np.random.seed(np.random.randint(5000) * pid)
             if hasattr(self.env, 'np_random'):
-                self.env.np_random.rand(np.random.randint(5000 )* pid)
+                self.env.np_random.random(np.random.randint(5000) * pid)
 
     def sample_worker(self, pid, queue, min_batch_size):
         self.seed_worker(pid)
@@ -47,7 +47,7 @@ class Agent:
 
         while logger.num_steps < min_batch_size:
             self.env.load_expert(self.data_loader.sample_seq())
-            
+
             state = self.env.reset()
             if self.running_state is not None:
                 state = self.running_state(state)
@@ -70,7 +70,7 @@ class Agent:
                 else:
                     c_reward, c_info = 0.0, np.array([0.0])
                     reward = env_reward
-                    
+
                 # add end reward
                 if self.end_reward and info.get('end', False):
                     reward += self.env.end_reward
