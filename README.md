@@ -96,8 +96,6 @@ To evaluate our universal humanoid controller, run:
 python scripts/eval_uhc.py --cfg uhc --iter 10000
 ```
 
-*Note that additional directory fixup may be needed for running these commands. Directorys that needs updating are named "/insert_directory_here/"*
-
 
 ## Citation
 If you find our work useful in your research, please cite our paper [kin_poly](https://zhengyiluo.github.io/projects/kin_poly/):
