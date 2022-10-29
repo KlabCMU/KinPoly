@@ -2,6 +2,9 @@
 
 [[paper]](https://arxiv.org/abs/2106.05969) [[website]](https://zhengyiluo.github.io/projects/kin_poly/) [[Video]](https://www.youtube.com/watch?v=yEiK9K1N-zw)
 
+<div float="center">
+  <img src="assets/gif/teaser.gif" />
+</div>
 
 ## Relationship to the main [uhc](https://github.com/KlabCMU/UniversalHumanoidControl) repository
 This repository is self-contained and houses an eariler version of the universal humanoid controller (one that only supports the average neutral SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
