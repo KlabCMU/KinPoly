@@ -16,8 +16,11 @@ class Config:
         if cfg_dict is not None:
             cfg = cfg_dict
         else:
-            cfg_path =  osp.join(self.base_dir, "uhc", "cfg", f"{cfg_id}.yml")
-            cfg = yaml.safe_load(open(cfg_path, 'r'))
+            cfg_path = osp.join(self.base_dir, f"config/**/{cfg_id}.yml")
+            files = glob.glob(cfg_path, recursive=True)
+            assert (len(files) == 1)
+            cfg_name = files[0]
+            cfg = yaml.safe_load(open(cfg_name, 'r'))
         # create dirs
         self.cfg_dict = cfg
         self.result_dir = osp.join(self.base_dir, "results")
@@ -83,7 +86,7 @@ class Config:
 
         # env config
         self.mujoco_model_file = mujoco_path % cfg['mujoco_model']
-        
+
         self.vis_model_file = '%s.xml' % cfg['vis_model']
         self.env_start_first = cfg.get('env_start_first', False)
         self.env_init_noise = cfg.get('env_init_noise', 0.0)

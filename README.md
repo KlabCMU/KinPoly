@@ -81,12 +81,12 @@ python scripts/train_uhc.py.py --cfg uhc --num_threads 35
 
 To evaluate our dynamics-regulated kinematic policy, run:
 ```
-python scripts/eval_ar_policy.py --cfg kin_poly --iter 1000  
+python scripts/eval_ar_policy.py --cfg kin_poly --iter 750  
 ```
 
 To compute metrics, run:
 ```
-python scripts/eval_pose_all --cfg kin_poly --algo kin_poly --iter 1000
+python scripts/eval_pose_all --cfg kin_poly --algo kin_poly --iter 750
 ```
 
 To evaluate our universal humanoid controller, run:

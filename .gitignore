@@ -6,6 +6,7 @@ someOtherfoler/
 sample_data/
 results/
 results
+wandb/
 
 # Compiled source #
 ###################

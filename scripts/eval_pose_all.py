@@ -27,7 +27,7 @@ from uhc.utils.config import Config as CC_Config
 from uhc.data_loaders.dataset_smpl_obj import DatasetSMPLObj
 from uhc.khrylib.rl.utils.visualizer import Visualizer
 import joblib
-    
+
 def compute_accel(joints):
     """
     Computes acceleration of 3D joints.
@@ -80,14 +80,14 @@ def compute_vel(joints):
 
 
 def compute_error_vel(joints_gt, joints_pred, vis = None):
-    vel_gt = joints_gt[1:] - joints_gt[:-1] 
+    vel_gt = joints_gt[1:] - joints_gt[:-1]
     vel_pred = joints_pred[1:] - joints_pred[:-1]
     normed = np.linalg.norm(vel_pred - vel_gt, axis=2)
 
     if vis is None:
         new_vis = np.ones(len(normed), dtype=bool)
     return np.mean(normed[new_vis], axis=1)
-    
+
 
 
 def convert_obj_qpos(action_one_hot, obj_pose):
@@ -102,7 +102,7 @@ def convert_obj_qpos(action_one_hot, obj_pose):
         # setting defult location for objects
         for i in range(5):
             obj_qos[(i*7):(i*7+3)] = [(i + 1) * 100, 100, 0]
-            
+
         obj_start = action_index_map[action_idx]
         obj_end = obj_start + action_len[action_idx]
         obj_qos[obj_start:obj_end] = obj_pose
@@ -113,7 +113,7 @@ def convert_obj_qpos(action_one_hot, obj_pose):
 def compute_metrics(results, algo, dt = 1/30):
     if results is None:
         return
-    
+
     res_dict = defaultdict(list)
     actino_suss = defaultdict(list)
 
@@ -121,31 +121,31 @@ def compute_metrics(results, algo, dt = 1/30):
         action = take.split("-")[0]
         if args.action != "all" and action != args.action:
             continue
-        
+
         res = results[take]
         traj_pred = res['qpos'].copy()
         traj_gt = res['qpos_gt'].copy()
-        
+
 
         head_pose_gt = res['head_pose_gt']
         action_one_hot = action_one_hot_dict[action]
-        
+
         obj_pose = res['obj_pose']
         if res['obj_pose'].shape[-1] != 35:
             obj_pose = np.array([convert_obj_qpos(action_one_hot, obj_p) for obj_p in res['obj_pose']])
-        
+
 
         vels_gt = get_joint_vels(traj_gt, dt)
         accels_gt = get_joint_accels(vels_gt, dt)
         vels_pred = get_joint_vels(traj_pred, dt)
-        
+
         accels_pred = get_joint_accels(vels_pred, dt)
 
 
 
         pen_pred, slide_pred, jpos_pred, head_pose, succ = compute_physcis_metris(traj_pred, obj_pose, head_pose_gt = head_pose_gt, take= take, res = res)
         pen_gt, slide_gt, jpos_gt, _, succ_gt = compute_physcis_metris(traj_gt, obj_pose, head_pose_gt = head_pose_gt, take = take, res = None)
-        jpos_pred = jpos_pred.reshape(-1, 24, 3) 
+        jpos_pred = jpos_pred.reshape(-1, 24, 3)
         jpos_gt = jpos_gt.reshape(-1, 24, 3)
 
         # import pdb; pdb.set_trace()
@@ -159,7 +159,7 @@ def compute_metrics(results, algo, dt = 1/30):
         head_mat_gt = get_root_matrix(head_pose_gt)
         head_dist = get_frobenious_norm(head_mat_pred, head_mat_gt)
 
-        
+
         vel_dist = get_mean_dist(vels_pred, vels_gt)
 
         accel_dist = np.mean(compute_error_accel(jpos_pred, jpos_gt)) * 1000
@@ -168,11 +168,11 @@ def compute_metrics(results, algo, dt = 1/30):
         smoothness_gt = get_mean_abs(accels_gt)
 
         jpos_pred -= jpos_pred[:, 0:1] # zero out root
-        jpos_gt -= jpos_gt[:, 0:1] 
+        jpos_gt -= jpos_gt[:, 0:1]
         mpjpe = np.linalg.norm(jpos_pred - jpos_gt, axis = 2).mean() * 1000
 
         # print(succ, succ_gt, take, slide_pred)
-        
+
         res_dict["root_dist"].append(root_dist)
         res_dict["mpjpe"].append(mpjpe)
         res_dict["head_dist"].append(head_dist)
@@ -180,7 +180,7 @@ def compute_metrics(results, algo, dt = 1/30):
         res_dict["slide_pred"].append(slide_pred)
         res_dict["pen_pred"].append(pen_pred)
         res_dict["succ"].append(succ)
-        
+
         # res_dict["accels_pred"].append(smoothness)
         # res_dict["accels_gt"].append(smoothness_gt)
         res_dict["vel_dist"].append(vel_dist)
@@ -189,7 +189,7 @@ def compute_metrics(results, algo, dt = 1/30):
         actino_suss[action].append(succ)
 
     res_dict = {k: np.mean(v) for k, v in res_dict.items()}
-    prt_string = "".join([f"{k}:{v:.3f} \t " for k, v in res_dict.items()]) + f"--{args.cfg} | {args.iter} | {args.algo} | wild? {args.wild}" 
+    prt_string = "".join([f"{k}:{v:.3f} \t " for k, v in res_dict.items()]) + f"--{args.cfg} | {args.iter} | {args.algo} | wild? {args.wild}"
     logger.info(prt_string)
     print({k: np.mean(v) for k, v in actino_suss.items()})
 
@@ -203,7 +203,7 @@ def get_body_part(body_name):
     return head_pos, head_quat
 
 def compute_physcis_metris(traj, obj_pose, head_pose_gt = None, take = None, res = None):
-    
+
     env.reset()
     lfoot = []
     rfoot = []
@@ -217,7 +217,7 @@ def compute_physcis_metris(traj, obj_pose, head_pose_gt = None, take = None, res
 
 
     for fr in range(len(traj)):
-        
+
         env.data.qpos[:env.qpos_lim] = traj[fr, :]
         env.data.qpos[env.qpos_lim:] = obj_pose[fr]
         env.sim.forward()
@@ -248,24 +248,24 @@ def compute_physcis_metris(traj, obj_pose, head_pose_gt = None, take = None, res
 
             pen_acc.append([contact.geom1, contact.geom2, pen])
             pen_acc_check.append([contact.geom1, contact.geom2, -contact.dist])
-        
+
         # print(traj[fr, :3] - get_body_part("Pelvis")[0])
         # print(np.sum(pen))
         pen_acc = np.array(pen_acc)
         pen_acc_check = np.array(pen_acc_check)
         if len(pen_acc) > 0 and np.sum(pen_acc[:, -1]) > 0:
-            seq_pen.append(np.sum(pen_acc[:, -1])) 
+            seq_pen.append(np.sum(pen_acc[:, -1]))
             # print(take, fr, contact.geom1, contact.geom2, np.sum(pen_acc[:, -1]))
-            
+
         pen_seq_info.append(pen_acc_check)
-        
+
         l_feet_pos, _ = get_body_part("L_Toe")
         r_feet_pos, _ = get_body_part("R_Toe")
         lfoot.append(l_feet_pos.copy())
         rfoot.append(r_feet_pos.copy())
 
         head_pose.append(np.concatenate(get_body_part("Head")))
-        
+
         joint_pos.append(env.get_wbody_pos())
     # import pdb; pdb.set_trace()
 
@@ -276,7 +276,7 @@ def compute_physcis_metris(traj, obj_pose, head_pose_gt = None, take = None, res
     rf_slide, rf_sliding_stats = compute_foot_sliding(rfoot, traj)
 
     # if take == "sit-1011_take_11":
-        # import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     # print(lf_slide, rf_slide)
 
     sliding  = (lf_slide + rf_slide)/2
@@ -284,11 +284,11 @@ def compute_physcis_metris(traj, obj_pose, head_pose_gt = None, take = None, res
 
     seq_pen = np.sum(seq_pen)/seq_len  * 1000 if len(seq_pen) > 0 else 0
 
-    # print(sliding)    
+    # print(sliding)
     if np.isnan(sliding):
         import pdb; pdb.set_trace()
 
-    
+
     return seq_pen, sliding, joint_pos, head_pose, succ
 
 def compute_foot_sliding(foot_data, traj_qpos):
@@ -315,9 +315,9 @@ def contiguous_regions(condition):
 
     # Find the indicies of changes in "condition"
     d = np.diff(condition)
-    idx, = d.nonzero() 
+    idx, = d.nonzero()
 
-    # We need to start things after the change in "condition". Therefore, 
+    # We need to start things after the change in "condition". Therefore,
     # we'll shift the index by 1 to the right.
     idx += 1
 
@@ -343,22 +343,22 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
     if curr_action == "sit":
         chair_geom = [25, 26]
         who_hits_step = set()
-        
+
         hit_contact = []
         for pen_info in pen_seq_info:
             hit = False
             for pen_info_ind in pen_info:
                 pen_info_ind = np.array(pen_info_ind).astype(int)
                 if (pen_info_ind[0] in chair_geom  or pen_info_ind[1] in chair_geom ) and (pen_info_ind[0] == 1 or pen_info_ind[1] == 1):
-                   hit = True
+                    hit = True
                 if (pen_info_ind[0] in chair_geom  or pen_info_ind[1] in chair_geom ) and (pen_info_ind[0] == 2 or pen_info_ind[1] == 2):
-                   hit = True
+                    hit = True
                 if (pen_info_ind[0] in chair_geom  or pen_info_ind[1] in chair_geom ) and (pen_info_ind[0] == 6 or pen_info_ind[1] == 6):
-                   hit = True
+                    hit = True
                 if (pen_info_ind[0] in chair_geom  or pen_info_ind[1] in chair_geom ) and (pen_info_ind[0] == 10 or pen_info_ind[1] == 10):
-                   hit = True
+                    hit = True
                 if (pen_info_ind[0] in chair_geom  or pen_info_ind[1] in chair_geom ) and (pen_info_ind[0] == 11 or pen_info_ind[1] == 11):
-                   hit = True
+                    hit = True
 
                 if (pen_info_ind[0] in chair_geom  or pen_info_ind[1] in chair_geom ):
                     who_hits_step.add(pen_info_ind[0])
@@ -370,7 +370,7 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
         else:
             succ = False
         # if not succ:
-            # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
     elif curr_action == "avoid":
         step_geom = [33]
@@ -385,7 +385,7 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
             for pen_info_ind in pen_info:
                 pen_info_ind = np.array(pen_info_ind).astype(int)
                 if (pen_info_ind[0] in step_geom  or pen_info_ind[1] in step_geom ) and (pen_info_ind[0] in body_geom_range or pen_info_ind[1] in body_geom_range):
-                   hit = True
+                    hit = True
 
                 if (pen_info_ind[0] in step_geom  or pen_info_ind[1] in step_geom ) :
                     who_hits_step.add(pen_info_ind[0])
@@ -394,19 +394,19 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
             hit_contact.append(hit)
         cont_region = contiguous_regions(np.array(hit_contact) == 1)
 
-        
+
         head_pos = np.array(head_pose)[:, :3]
         head_pos_gt = np.array(head_pose_gt)[:, :3]
         pos_diff = np.linalg.norm(head_pos[-1] - head_pos_gt[-1]) # Mearusing the ending head pose difference (can't drift too much)
-        
+
 
         if len(cont_region) > 0 or pos_diff > 0.5:
             succ = False
         else:
             succ = True
-            
+
         # if not succ:
-            # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
     elif curr_action == "push":
         disp_threshold = 0.1
@@ -414,11 +414,11 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
         disp = np.max(np.linalg.norm(box_pos[0] - box_pos, axis = 1))
         succ = disp > disp_threshold
         # if not succ:
-            # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
     elif curr_action == "step":
         step_geom = [34]
-        
+
         who_hits_step = set()
         body_geom_range = [4,5,8,9]
         hit_contact = []
@@ -430,7 +430,7 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
             for pen_info_ind in pen_info:
                 pen_info_ind = np.array(pen_info_ind).astype(int)
                 if (pen_info_ind[0] in step_geom  or pen_info_ind[1] in step_geom ) and (pen_info_ind[0] in body_geom_range or pen_info_ind[1] in body_geom_range):
-                   hit = True
+                    hit = True
 
                 if (pen_info_ind[0] in step_geom  or pen_info_ind[1] in step_geom ) :
                     who_hits_step.add(pen_info_ind[0])
@@ -439,7 +439,7 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
             hit_contact.append(hit)
         cont_region = contiguous_regions(np.array(hit_contact) == 1)
         step_cont_region = contiguous_regions(pelvis_z_disp > 0.1)
-        
+
 
         # if len(cont_region) > 0 and len(step_cont_region) > 0 and pelvis_z_disp_max < z_disp_threshold:
         if len(cont_region) > 0 and len(step_cont_region) > 0:
@@ -454,15 +454,15 @@ def compute_obj_interact(take, traj, obj_pose, pen_seq_info, head_pose, head_pos
         print("success but failed interaction: ", take)
 
     # if take == "step-2021-05-04-20-19-04":
-        # import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     if not res is None and "fail_safe" in res:
         succ = succ and not res['fail_safe']
     # root_delta = np.linalg.norm(traj[1:,:3] - traj[:-1,:3], axis = 1) # capturing fail safe
-    # if np.max(root_delta) > 0.1: # Moving more than 10 cm 
+    # if np.max(root_delta) > 0.1: # Moving more than 10 cm
     #     print("Fail safe abuse!", take)
     #     succ = False
-            
+
 
     return succ
 class kin_polyVisulizer(Visualizer):
@@ -495,7 +495,7 @@ class kin_polyVisulizer(Visualizer):
 
             if poses['obj_pose'].shape[-1] != 35:
                 poses['obj_pose'] = data_loader.convert_obj_qpos(res['obj_pose'], curr_action)
-            
+
             self.num_fr = poses['pred'].shape[0]
             yield poses
 
@@ -507,7 +507,7 @@ class kin_polyVisulizer(Visualizer):
         # self.env_vis.data.qpos[152:] = self.data['obj_pose'][self.fr]
 
         self.env_vis.sim_forward()
-        
+
 
     def record_video(self):
         frame_dir = f'{args.video_dir}/frames'
@@ -529,7 +529,7 @@ class kin_polyVisulizer(Visualizer):
             cmd = ['/usr/local/bin/ffmpeg', '-y', '-r', '30', '-f', 'image2', '-start_number', '0',
                 '-i', f'{frame_dir}/%04d.png', '-vcodec', 'libx264', '-crf', '5', '-pix_fmt', 'yuv420p', out_name]
             subprocess.call(cmd)
-        
+
 
 def norm_qpos(qpos):
     qpos_norm = qpos.copy()
@@ -556,12 +556,12 @@ if __name__ == "__main__":
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
     else:
         cc_cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all_step.xml"
-    
+
     data_loader = DatasetSMPLObj(cc_cfg.data_specs, data_mode="test")
     init_expert = data_loader.sample_seq()
     env = CC_HumanoidEnv(cc_cfg, init_expert = init_expert, data_specs = cc_cfg.data_specs, mode="test")
 
-    
+
 
     action_one_hot_dict = {
         "sit": np.array([1,0,0,0]),
@@ -577,26 +577,26 @@ if __name__ == "__main__":
     # sr_res_path = 'results/%s/%s/%s/results/iter_%04d_%s.p' % (args.action, args.algo, args.cfg, args.iter, args.data)
 
     if args.wild:
-        all_data = joblib.load("sample_data/features/traj_wild_smpl.p")
+        all_data = joblib.load("sample_data/features/real_annotations.p")
     else:
         all_data = joblib.load("sample_data/features/mocap_annotations.p")
-    
-    
+
+
     if args.algo == "posereg":
         # sr_res_path = "/insert_directory_here//results/statereg/all_01_traj/results/iter_0100_test.p"
         if args.wild:
             sr_res_path = f"/insert_directory_here//results/statereg/{args.cfg}/results/iter_{args.iter:04d}_test_wild.p"
         else:
             sr_res_path = f"/insert_directory_here//results/statereg/{args.cfg}/results/iter_{args.iter:04d}_test.p"
-        
+
         ego_res, _ = pickle.load(open(sr_res_path, 'rb')) if args.cfg is not None else (None, None)
         sr_res = defaultdict(dict)
         for k in ego_res['traj_pred'].keys():
             if k in all_data:
                 sr_res[k] = {
-                    "qpos": norm_qpos(ego_res['traj_pred'][k]), 
-                    "qpos_gt": norm_qpos(ego_res['traj_orig'][k]), 
-                    "obj_pose": all_data[k]['obj_pose'], 
+                    "qpos": norm_qpos(ego_res['traj_pred'][k]),
+                    "qpos_gt": norm_qpos(ego_res['traj_orig'][k]),
+                    "obj_pose": all_data[k]['obj_pose'],
                     "head_pose_gt": all_data[k]['head_pose']
                 }
             else:
@@ -610,21 +610,21 @@ if __name__ == "__main__":
             sr_res_path = f"/insert_directory_here//results/egomimic/{args.cfg}/results/iter_{args.iter:04d}_test_wild.p"
         else:
             sr_res_path = f"/insert_directory_here//results/egomimic/{args.cfg}/results/iter_{args.iter:04d}_test.p"
-        
+
         ego_res, _ = pickle.load(open(sr_res_path, 'rb')) if args.cfg is not None else (None, None)
         sr_res = defaultdict(dict)
-        
+
         for k in ego_res['traj_pred'].keys():
             if k in all_data:
                 sr_res[k] = {
                     "qpos": norm_qpos(ego_res['traj_pred'][k][:, :76]),
-                    "qpos_gt": norm_qpos(ego_res['traj_orig'][k][:, :]), 
-                    "obj_pose": ego_res['traj_pred'][k][:, 76:], 
+                    "qpos_gt": norm_qpos(ego_res['traj_orig'][k][:, :]),
+                    "obj_pose": ego_res['traj_pred'][k][:, 76:],
                     "head_pose_gt": all_data[k]['head_pose']
                 }
             else:
                 print(k, "not in all data")
-        
+
     elif args.algo == "statear":
         cfg = Config(args.action, args.cfg, wild = args.wild, create_dirs=(args.iter == 0), mujoco_path = "%s.xml")
         if args.wild:
@@ -635,7 +635,7 @@ if __name__ == "__main__":
         sr_res_load = pickle.load(open(sr_res_path, 'rb')) if args.cfg is not None else (None, None)
         sr_res = {}
         for k, v in tqdm(sr_res_load.items()):
-            
+
             if k in all_data:
                 sr_res[k] = v
                 sr_res[k]['head_pose_gt'] = all_data[k]['head_pose']
@@ -647,12 +647,12 @@ if __name__ == "__main__":
         base_dir = f"/insert_directory_here//results/all/statear/{args.cfg}/results"
         for k, v in tqdm(all_data.items()):
             fit_dir = osp.join(base_dir, k + ".pkl")
-            
+
             if osp.exists(fit_dir):
                 fit_dict = joblib.load(fit_dir)
                 sr_res[k] = {
-                "qpos": fit_dict['pred'], 
-                "qpos_gt": all_data[k]['qpos'][:-1], 
+                "qpos": fit_dict['pred'],
+                "qpos_gt": all_data[k]['qpos'][:-1],
                 "obj_pose": fit_dict['obj_pose'],
                 "head_pose_gt": all_data[k]['head_pose']
                 }
@@ -660,15 +660,23 @@ if __name__ == "__main__":
     elif args.algo == "udc" or args.algo == "kin_poly":
         if args.wild:
             if args.iter == -1:
-                data = joblib.load(f"results/all/statear/{args.cfg}/results/{args.iter}_traj_wild_smpl_coverage_full.pkl")
+                data = joblib.load(
+                    f"results/all/statear/{args.cfg}/results/{args.iter}_real_annotations_coverage_full.pkl"
+                )
             else:
-                data = joblib.load(f"results/all/statear/{args.cfg}/results/{args.iter:04d}_traj_wild_smpl_coverage_full.pkl")
+                data = joblib.load(
+                    f"results/all/statear/{args.cfg}/results/{args.iter:04d}_real_annotations_coverage_full.pkl"
+                )
         else:
             if args.iter == -1:
-                data = joblib.load(f"results/all/statear/{args.cfg}/results/{args.iter}_expert_smpl_all_all_coverage_full.pkl")
+                data = joblib.load(
+                    f"results/all/statear/{args.cfg}/results/{args.iter}_mocap_annotations_coverage_full.pkl"
+                )
             else:
-                data = joblib.load(f"results/all/statear/{args.cfg}/results/{args.iter:04d}_expert_smpl_all_all_coverage_full.pkl")
-        
+                data = joblib.load(
+                    f"results/all/statear/{args.cfg}/results/{args.iter:04d}_mocap_annotations_coverage_full.pkl"
+                )
+
 
         sr_res = defaultdict(dict)
         for k, v in tqdm(data.items()):
@@ -678,18 +686,18 @@ if __name__ == "__main__":
                 gt_qpos = all_data[k]['qpos'][:, :]
                 head_pose = np.array(all_data[k]['head_pose'])[:, ]
 
-                if pred_qpos.shape[0] != gt_qpos.shape[0]: 
+                if pred_qpos.shape[0] != gt_qpos.shape[0]:
                     gt_qpos = gt_qpos[:-1, :]
                     head_pose = head_pose[:-1, :]
-                    if pred_qpos.shape[0] != gt_qpos.shape[0]: 
+                    if pred_qpos.shape[0] != gt_qpos.shape[0]:
                         print(k)
                         continue
 
                 sr_res[k] = {
-                    "qpos": pred_qpos, 
-                    "qpos_gt": gt_qpos, 
+                    "qpos": pred_qpos,
+                    "qpos_gt": gt_qpos,
                     "obj_pose": obj_pose,
-                    "head_pose_gt": head_pose, 
+                    "head_pose_gt": head_pose,
                     "fail_safe": v['fail_safe'] if "fail_safe" in v else False
                 }
             else:
@@ -700,5 +708,3 @@ if __name__ == "__main__":
     elif args.mode == "vis":
         vis = kin_polyVisulizer("humanoid_smpl_neutral_mesh_all_vis.xml")
         vis.show_animation()
-
-

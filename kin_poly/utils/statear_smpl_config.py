@@ -4,27 +4,35 @@ import os
 import sys
 import pdb
 import os.path as osp
+
 sys.path.append(os.getcwd())
 
 from kin_poly.utils import recreate_dirs
 
+
 class Config:
 
-    def __init__(self, action, cfg_id, wild = False, create_dirs=False, mujoco_path = '%s.xml'):
+    def __init__(self,
+                 action,
+                 cfg_id,
+                 wild=False,
+                 create_dirs=False,
+                 mujoco_path='%s.xml'):
         self.id = cfg_id
         self.action = action
         self.wild = wild
         self.all_actions = ["sit", "push", "avoid", "step"]
-        cfg_name = 'config/statear/%s.yml' % cfg_id
-        if not os.path.exists(cfg_name):
-            print("Config file doesn't exist: %s" % cfg_name)
-            exit(0)
-        self.yaml_data = cfg = yaml.load(open(cfg_name, 'r'), Loader=yaml.FullLoader)
+        cfg_path = f"config/**/{cfg_id}.yml"
+        files = glob.glob(cfg_path, recursive=True)
+        assert (len(files) == 1)
+        cfg_name = files[0]
+        self.yaml_data = cfg = yaml.load(open(cfg_name, 'r'),
+                                         Loader=yaml.FullLoader)
 
         self.base_dir = 'results'
         self.data_dir = cfg.get('dataset_path', 'datasets')
         self.batch_size = cfg.get("batch_size", 128)
-        
+
         self.cfg_dir = osp.join(self.base_dir, "all", "statear", cfg_id)
         self.model_dir = osp.join(self.cfg_dir, "models")
         self.policy_model_dir = osp.join(self.cfg_dir, "models_policy")
@@ -32,13 +40,14 @@ class Config:
         self.log_dir = osp.join(self.cfg_dir, "log")
         self.tb_dir = osp.join(self.cfg_dir, "tb")
         self.tb_test_dir = osp.join(self.cfg_dir, "tb_test")
-        
+        self.notes = cfg.get('notes', "exp notes")
+
         os.makedirs(self.model_dir, exist_ok=True)
         os.makedirs(self.policy_model_dir, exist_ok=True)
-        
+
         os.makedirs(self.result_dir, exist_ok=True)
         # if create_dirs:
-            # recreate_dirs(self.log_dir, self.tb_dir)
+        # recreate_dirs(self.log_dir, self.tb_dir)
 
         if wild:
             self.data_file = cfg["data_wild_file"]
@@ -50,12 +59,14 @@ class Config:
             self.of_file = cfg.get('of_file', "of_feat_smpl_all")
 
         # training config
-        
-        self.meta = yaml.load(open(osp.join(self.data_dir, "meta", self.meta_id + ".yml"), 'r'), Loader=yaml.FullLoader)
+
+        self.meta = yaml.load(open(
+            osp.join(self.data_dir, "meta", self.meta_id + ".yml"), 'r'),
+                              Loader=yaml.FullLoader)
         self.object = self.meta['object']
         self.mujoco_model_file = mujoco_path % cfg['mujoco_model']
 
-        self.take_actions = self.meta['action_type']        
+        self.take_actions = self.meta['action_type']
         self.all_takes = {x: self.meta[x] for x in ['train', 'test']}
         self.takes = {'train': [], 'test': []}
 
@@ -65,7 +76,7 @@ class Config:
                 curr_action = self.take_actions[take]
                 self.takes[x].append(take)
         # if create_dirs:
-            # recreate_dirs(self.log_dir, self.tb_dir)
+        # recreate_dirs(self.log_dir, self.tb_dir)
 
         # training config
         self.meta_id = cfg['meta_id']
@@ -97,7 +108,6 @@ class Config:
         self.noise_schedule = cfg.get('noise_schedule', False)
         self.scheduled_noise = cfg.get('scheduled_noise', 0.0)
 
-    
         self.norm_pose = cfg.get('norm_pose', False)
         self.norm_obs = cfg.get('norm_obs', False)
         self.norm_state = cfg.get('norm_state', False)
@@ -105,7 +115,6 @@ class Config:
 
         self.add_noise = cfg.get('add_noise', False)
         self.noise_std = cfg.get('noise_std', 0.0)
-        
 
         self.obs_coord = cfg.get('obs_coord', 'heading')
         self.obs_heading = cfg.get('obs_heading', False)
@@ -126,18 +135,27 @@ class Config:
         self.has_z = cfg.get("has_z", True)
         self.reward_weights = cfg.get("reward_weights", {})
 
-
         self.use_of = cfg.get("use_of", True)
         self.use_head = cfg.get("use_head", True)
+        self.use_obj = cfg.get("use_obj", True)
         self.use_action = cfg.get("use_action", True)
         self.use_vel = cfg.get("use_vel", False)
         self.use_context = cfg.get("use_context", True)
 
         self.smooth = cfg.get("smooth", False)
 
-    def get(self, query, default_value = None):
+        self.cc_cfg = self.policy_specs.get("cc_cfg", "uhc")
+        self.cc_iter = self.policy_specs.get("cc_iter", -1)
+
+        self.joint_controller = self.policy_specs.get("joint_controller",
+                                                      False)
+
+    def get(self, query, default_value=None):
         if hasattr(self, query):
             return getattr(self, query)
         else:
             return self.yaml_data.get(query, default_value)
-    
+
+    def update(self, dict):
+        for k, v in vars(dict).items():
+            self.__setattr__(k, v)
