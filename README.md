@@ -4,7 +4,7 @@
 
 
 ## Relationship to the main [uhc](https://github.com/KlabCMU/UniversalHumanoidControl) repository
-This repository is self-contained and house an eariler version of the universal humanoid controller (one that only supports the mean SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
+This repository is self-contained and houses an eariler version of the universal humanoid controller (one that only supports the average neutral SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
 
 ## Introduction
 
