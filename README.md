@@ -109,4 +109,31 @@ If you find our work useful in your research, please cite our paper [kin_poly](h
   booktitle={Advances in Neural Information Processing Systems},
   year={2021}
 }
+
 ``` 
+
+Related work: 
+```
+@inproceedings{yuan2020residual,
+    title={Residual Force Control for Agile Human Behavior Imitation and Extended Motion Synthesis},
+    author={Yuan, Ye and Kitani, Kris},
+    booktitle={Advances in Neural Information Processing Systems},
+    year={2020}
+}
+
+@inproceedings{yuan2019ego,
+    title={Ego-Pose Estimation and Forecasting as Real-Time PD Control},
+    author={Yuan, Ye and Kitani, Kris},
+    booktitle={Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
+    year={2019},
+    pages={10082--10092}
+}
+
+```
+
+## References
+This repository is based on the following repositories:
+* Part of the UHC code is from: [rfc](https://github.com/Khrylx/RFC)
+* SMPL models and layer is from: [SMPL-X model](https://github.com/vchoutas/smplx)
+* Feature extractors are from: [SPIN](https://github.com/nkolot/SPIN)
+* NN modules are from (khrylib): [DLOW](https://github.com/Khrylx/DLow)
