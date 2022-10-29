@@ -31,6 +31,10 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mujoco210/bin
 
 3. The rest of the dependencies can be found in ```requirements.txt```. 
 
+```
+pip install -r requirements.txt
+```
+
 ## Datasets and trained models
 
 The datasets we use for training and evaluating our method can be found here:
