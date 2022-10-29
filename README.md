@@ -10,8 +10,6 @@ This repository is self-contained and houses an eariler version of the universal
 
 In this project, we demonstrate the ability to estimate 3D human pose and human-object interactions from egocentric videos. This code base contains all the necessary files to train and reproduce the results reported in our paper, and contain configuration files and hyperparameters used in our experiments. Some training data (namely, [AMASS](https://amass.is.tue.mpg.de/)) and external library ([Mujoco](http://www.mujoco.org/)) may require additional licence to obtain, and this codebase contains data processing scripts to process these data once obtained. 
 
-Notice that internally, we call the task of **Egocentric Pose Estimation** "kin_poly", as in "reliving your past experiences through egocentric view", so all the code developed for egocentric pose estimation is contained in the folder called "kin_poly" (which is the project name). We develop the Universal Humanoid Controller independently, under the project name of "uhc", as in "mimicking and copying target pose". Thus, the two main folders for this project is "kin_poly" and "coypcat". 
-
 ## Dependencies
 
 To create the environment, follow the following instructions: 
