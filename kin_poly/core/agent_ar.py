@@ -567,14 +567,14 @@ class AgentAR(AgentPPO):
         freq_dict = defaultdict(list)
 
         while logger.num_steps < min_batch_size:
-            # context_sample = self.data_loader.sample_seq(
-            #     freq_dict=self.freq_dict,
-            #     sampling_temp=self.cfg.policy_specs.get("sampling_temp", 0.5),
-            #     sampling_freq=self.cfg.policy_specs.get("sampling_freq", 0.9),
-            # )
+            context_sample = self.data_loader.sample_seq(
+                freq_dict=self.freq_dict,
+                sampling_temp=self.cfg.policy_specs.get("sampling_temp", 0.5),
+                sampling_freq=self.cfg.policy_specs.get("sampling_freq", 0.9),
+            )
             # context_sample = self.data_loader.sample_seq(freq_dict = self.freq_dict, sampling_temp = self.cfg.policy_specs.get("sampling_temp", 0.5), sampling_freq = self.cfg.policy_specs.get("sampling_freq", 0.9), full_sample = True if self.data_loader.get_seq_len(self.fit_ind) < 1000 else False)
             # context_sample = self.data_loader.sample_seq(freq_dict = self.freq_dict, sampling_temp = 0.5)
-            context_sample = self.data_loader.sample_seq()
+            # context_sample = self.data_loader.sample_seq()
 
             # should not try to fix the height during training!!!
             ar_context = self.policy_net.init_context(context_sample,
