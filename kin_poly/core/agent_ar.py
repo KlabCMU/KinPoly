@@ -327,8 +327,8 @@ class AgentAR(AgentPPO):
         self.test_data_loaders = []
         self.data_loader = data_loader = StateARDataset(cfg,
                                                         cfg.data,
-                                                        sim=False)
-        self.test_data_loaders.append(StateARDataset(cfg, "test", sim = True))
+                                                        sim=True)
+        self.test_data_loaders.append(StateARDataset(cfg, "test"))
 
         from kin_poly.utils.statear_smpl_config import Config
 
@@ -338,10 +338,9 @@ class AgentAR(AgentPPO):
             wild=True,
             create_dirs=False,
             mujoco_path=
-            "assets/mujoco_models/%s.xml",
+            "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml",
         )
-        self.test_data_loaders.append(
-            StateARDataset(cfg_wild, "test", sim=True))
+        self.test_data_loaders.append(StateARDataset(cfg_wild, "test"))
 
     def load_checkpoint(self, i_iter):
         cfg, device, dtype = self.cfg, self.device, self.dtype
@@ -572,6 +571,9 @@ class AgentAR(AgentPPO):
                 sampling_temp=self.cfg.policy_specs.get("sampling_temp", 0.5),
                 sampling_freq=self.cfg.policy_specs.get("sampling_freq", 0.9),
             )
+            self.data_loader.curr_key
+            
+            np.random.random(5)
             # context_sample = self.data_loader.sample_seq(freq_dict = self.freq_dict, sampling_temp = self.cfg.policy_specs.get("sampling_temp", 0.5), sampling_freq = self.cfg.policy_specs.get("sampling_freq", 0.9), full_sample = True if self.data_loader.get_seq_len(self.fit_ind) < 1000 else False)
             # context_sample = self.data_loader.sample_seq(freq_dict = self.freq_dict, sampling_temp = 0.5)
             # context_sample = self.data_loader.sample_seq()
@@ -621,7 +623,7 @@ class AgentAR(AgentPPO):
                 if flags.debug:
                     np.set_printoptions(precision=4, suppress=1)
                     print(c_reward, c_info)
-
+                
                 # add end reward
                 if self.end_reward and info.get("end", False):
                     reward += self.env.end_reward

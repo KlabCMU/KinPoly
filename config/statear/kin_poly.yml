@@ -7,7 +7,7 @@ data_wild_file: real_annotations
 of_file_wild: real_img_feats
 
 mujoco_model: 'humanoid_smpl_neutral_mesh'
-seed: 2
+seed: 4
 fr_num: 100
 augment: false
 
