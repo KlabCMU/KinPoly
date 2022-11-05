@@ -572,7 +572,7 @@ class AgentAR(AgentPPO):
                 sampling_freq=self.cfg.policy_specs.get("sampling_freq", 0.9),
             )
             self.data_loader.curr_key
-            
+
             np.random.random(5)
             # context_sample = self.data_loader.sample_seq(freq_dict = self.freq_dict, sampling_temp = self.cfg.policy_specs.get("sampling_temp", 0.5), sampling_freq = self.cfg.policy_specs.get("sampling_freq", 0.9), full_sample = True if self.data_loader.get_seq_len(self.fit_ind) < 1000 else False)
             # context_sample = self.data_loader.sample_seq(freq_dict = self.freq_dict, sampling_temp = 0.5)
@@ -623,7 +623,7 @@ class AgentAR(AgentPPO):
                 if flags.debug:
                     np.set_printoptions(precision=4, suppress=1)
                     print(c_reward, c_info)
-                
+
                 # add end reward
                 if self.end_reward and info.get("end", False):
                     reward += self.env.end_reward
@@ -778,7 +778,9 @@ class AgentAR(AgentPPO):
         self.policy_net.set_mode("train")
         self.policy_net.initialize_rnn((masks, v_metas))
         """get advantage estimation from the trajectories"""
-        print("==================================================>")
+        print(
+            f"==========================Epoch: {self.epoch}=======================>"
+        )
 
         if not self.cfg.policy_specs.get("grad_joint", False):
             if self.cfg.policy_specs.get("rl_update", False):
@@ -930,7 +932,7 @@ class AgentAR(AgentPPO):
                     loss.backward()
                     self.policy_net.optimizer.step()
                     pbar.set_description_str(
-                        f"Per-step loss: {loss.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}] lr: {self.policy_net.scheduler.get_lr()[0]:.5f}"
+                        f"Per-step {self.epoch} loss: {loss.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}] lr: {self.policy_net.scheduler.get_lr()[0]:.5f}"
                     )
             else:
                 surr_loss, ratio = self.ppo_loss(log_probs, advantages,
@@ -956,7 +958,7 @@ class AgentAR(AgentPPO):
                 self.clip_policy_grad()
                 self.optimizer_policy.step()
                 pbar.set_description_str(
-                    f"Per-step loss: {loss_step.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}]"
+                    f"Per-step {self.epoch} loss: {loss_step.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}]"
                     +
                     f" | PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ratio: {ratio.mean().cpu().detach().numpy():.3f} | lr: {self.scheduler_policy.get_lr()[0]:.5f}"
                 )
