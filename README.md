@@ -6,12 +6,10 @@
   <img src="assets/gif/teaser.gif" />
 </div>
 
-## Relationship to the main [uhc](https://github.com/KlabCMU/UniversalHumanoidControl) repository
-This repository is self-contained and houses an eariler version of the universal humanoid controller (one that only supports the average neutral SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
-
 ## Introduction
 
 In this project, we demonstrate the ability to estimate 3D human pose and human-object interactions from egocentric videos. This code base contains all the necessary files to train and reproduce the results reported in our paper, and contain configuration files and hyperparameters used in our experiments. Some training data (namely, [AMASS](https://amass.is.tue.mpg.de/)) and external library ([Mujoco](http://www.mujoco.org/)) may require additional licence to obtain, and this codebase contains data processing scripts to process these data once obtained. 
+
 
 ## Dependencies
 
@@ -98,6 +96,9 @@ To evaluate our universal humanoid controller, run:
 ```
 python scripts/eval_uhc.py --cfg uhc --iter 10000
 ```
+
+## Relationship to the main [uhc](https://github.com/KlabCMU/UniversalHumanoidControl) repository
+This repository is self-contained and houses an eariler version of the universal humanoid controller (one that only supports the average neutral SMPL human). For support of all SMPL human models, please refer to the main UHC repository.
 
 
 ## Citation
