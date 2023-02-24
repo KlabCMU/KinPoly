@@ -21,3 +21,4 @@ chumpy
 patchelf
 chardet
 pyopengl
+torchgeometry

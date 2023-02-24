@@ -84,7 +84,13 @@ python scripts/train_uhc.py.py --cfg uhc --num_threads 35
 
 To evaluate our dynamics-regulated kinematic policy, run:
 ```
-python scripts/eval_ar_policy.py --cfg kin_poly --iter 750  
+python scripts/eval_ar_policy.py --cfg kin_poly --iter 750  # Mocal data
+python scripts/eval_ar_policy.py --cfg kin_poly --iter 750  --wild # Real-world data
+```
+
+To evalutes our kinematic policy using only supervised learning, run:
+```
+python scripts/exp_arnet_all.py --cfg kin_poly  --test --iter 1000
 ```
 
 To compute metrics, run:

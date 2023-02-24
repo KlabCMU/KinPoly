@@ -20,26 +20,17 @@ import time
 from scipy.linalg import cho_solve, cho_factor
 import joblib
 from kin_poly.utils.flags import flags
+from uhc.utils.tools import CustomUnpickler
 
 
 class HumanoidAREnv(HumanoidEnv):
 
-    def __init__(self,
-                 cfg,
-                 cc_cfg,
-                 init_context,
-                 cc_iter=-1,
-                 mode="train",
-                 wild=False,
-                 ar_mode=False):
+    def __init__(self, cfg, cc_cfg, init_context, cc_iter=-1, mode="train", wild=False, ar_mode=False):
         mujoco_env.MujocoEnv.__init__(self, cc_cfg.mujoco_model_file, 15)
         self.cc_cfg = cc_cfg
         self.kin_cfg = cfg
         self.wild = wild
-        self.setup_constants(cc_cfg,
-                             cc_cfg.data_specs,
-                             mode=mode,
-                             no_root=False)
+        self.setup_constants(cc_cfg, cc_cfg.data_specs, mode=mode, no_root=False)
 
         # env specific
         self.num_obj = self.get_obj_qpos().shape[0] // 7
@@ -60,28 +51,19 @@ class HumanoidAREnv(HumanoidEnv):
         self.ar_model_v = self.kin_cfg.model_specs.get("model_v", 1)
         self.ar_mode = ar_mode
         self.body_diff_thresh = cfg.policy_specs.get('body_diff_thresh', 10)
-        self.body_diff_gt_thresh = cfg.policy_specs.get(
-            'body_diff_gt_thresh', 12)
+        self.body_diff_gt_thresh = cfg.policy_specs.get('body_diff_gt_thresh', 12)
 
         print(f"scheduled_sampling: {self.scheduled_sampling}")
 
         self.set_spaces()
-        self.jpos_diffw = np.array(
-            cfg.reward_weights.get("jpos_diffw", [
-                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1
-            ]))[:, None]
+        self.jpos_diffw = np.array(cfg.reward_weights.get("jpos_diffw", [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))[:, None]
         ''' Load CC Controller '''
         state_dim = self.get_cc_obs().shape[0]
         action_dim = self.cc_action_dim
         if cc_cfg.actor_type == "gauss":
-            self.cc_policy = PolicyGaussian(cc_cfg,
-                                            action_dim=action_dim,
-                                            state_dim=state_dim)
+            self.cc_policy = PolicyGaussian(cc_cfg, action_dim=action_dim, state_dim=state_dim)
         elif cc_cfg.actor_type == "mcp":
-            self.cc_policy = PolicyMCP(cc_cfg,
-                                       action_dim=action_dim,
-                                       state_dim=state_dim)
+            self.cc_policy = PolicyMCP(cc_cfg, action_dim=action_dim, state_dim=state_dim)
 
         self.cc_value_net = Value(MLP(state_dim, cc_cfg.value_hsize, cc_cfg.value_htype))
         print(cc_cfg.model_dir)
@@ -91,29 +73,22 @@ class HumanoidAREnv(HumanoidEnv):
             cc_iter = np.max([int(i.split("_")[-1].split(".")[0]) for i in os.listdir(cc_cfg.model_dir)])
             cp_path = '%s/iter_%04d.p' % (cc_cfg.model_dir, cc_iter)
         print(('loading model from checkpoint: %s' % cp_path))
-        model_cp = pickle.load(open(cp_path, "rb"))
-        running_state = ZFilter((state_dim,), clip=5)
-        running_state.set_mean_std(model_cp['running_state']['mean'], model_cp['running_state']['std'], model_cp['running_state']['n'])
+        model_cp = CustomUnpickler(open(cp_path, "rb")).load()
+        running_state = model_cp['running_state']
         self.cc_running_state = running_state
         if not self.kin_cfg.joint_controller:
             self.cc_policy.load_state_dict(model_cp['policy_dict'])
             self.cc_value_net.load_state_dict(model_cp['value_dict'])
 
     def load_context(self, data_dict):
-        self.ar_context = {
-            k: v[0].detach().cpu().numpy()
-            if v.requires_grad else v[0].cpu().numpy()
-            for k, v in data_dict.items()
-        }
+        self.ar_context = {k: v[0].detach().cpu().numpy() if v.requires_grad else v[0].cpu().numpy() for k, v in data_dict.items()}
 
         self.ar_context['len'] = self.ar_context['qpos'].shape[0] - 1
-        self.gt_targets = self.smpl_humanoid.qpos_fk_batch(
-            self.ar_context['qpos'])
+        self.gt_targets = self.smpl_humanoid.qpos_fk_batch(self.ar_context['qpos'])
         self.target = self.smpl_humanoid.qpos_fk(self.ar_context['ar_qpos'][0])
 
     def set_model_params(self):
-        if self.cc_cfg.action_type == 'torque' and hasattr(
-                self.cc_cfg, 'j_stiff'):
+        if self.cc_cfg.action_type == 'torque' and hasattr(self.cc_cfg, 'j_stiff'):
             self.model.jnt_stiffness[1:] = self.cc_cfg.j_stiff
             self.model.dof_damping[6:] = self.cc_cfg.j_damp
 
@@ -134,9 +109,7 @@ class HumanoidAREnv(HumanoidEnv):
         self.cc_action_dim = self.ndof + self.vf_dim
 
         self.action_dim = 75
-        self.action_space = spaces.Box(low=-np.ones(self.action_dim),
-                                       high=np.ones(self.action_dim),
-                                       dtype=np.float32)
+        self.action_space = spaces.Box(low=-np.ones(self.action_dim), high=np.ones(self.action_dim), dtype=np.float32)
         obs = self.get_obs()
 
         self.obs_dim = obs.size
@@ -167,8 +140,7 @@ class HumanoidAREnv(HumanoidEnv):
         curr_qpos_local = curr_qpos.copy()
         curr_qpos_local[3:7] = de_heading(curr_qpos_local[3:7])
 
-        pred_wbpos, pred_wbquat = self.get_wbody_pos().reshape(
-            -1, 3), self.get_wbody_quat().reshape(-1, 4)
+        pred_wbpos, pred_wbquat = self.get_wbody_pos().reshape(-1, 3), self.get_wbody_quat().reshape(-1, 4)
 
         head_idx = self.get_head_idx()
         pred_hrot = pred_wbquat[head_idx]
@@ -189,14 +161,12 @@ class HumanoidAREnv(HumanoidEnv):
             # get target head vel
             t_havel = self.ar_context['head_vels'][t, 3:].copy()
             t_hlvel = self.ar_context['head_vels'][t, :3].copy()
-            t_obj_relative_head = self.ar_context["obj_head_relative_poses"][
-                t, :].copy()
+            t_obj_relative_head = self.ar_context["obj_head_relative_poses"][t, :].copy()
 
             # difference in head, in head's heading coordinates
             diff_hpos = t_hpos - pred_hpos
             diff_hpos = transform_vec(diff_hpos, pred_hrot_heading, "heading")
-            diff_hrot = quaternion_multiply(quaternion_inverse(t_hrot),
-                                            pred_hrot)
+            diff_hrot = quaternion_multiply(quaternion_inverse(t_hrot), pred_hrot)
 
         q_heading = get_heading_q(pred_hrot_heading).copy()
 
@@ -205,16 +175,12 @@ class HumanoidAREnv(HumanoidEnv):
 
         diff_obj = obj_pos - pred_hpos
         diff_obj_loc = transform_vec(diff_obj, pred_hrot_heading, "heading")
-        obj_rot_local = quaternion_multiply(quaternion_inverse(q_heading),
-                                            obj_rot)  # Object local coordinate
-        pred_obj_relative_head = np.concatenate([diff_obj_loc, obj_rot_local],
-                                                axis=0)
+        obj_rot_local = quaternion_multiply(quaternion_inverse(q_heading), obj_rot)  # Object local coordinate
+        pred_obj_relative_head = np.concatenate([diff_obj_loc, obj_rot_local], axis=0)
 
         # state
         # order of these matters !!!
-        obs.append(
-            curr_qpos_local[2:]
-        )  # current height + local body orientation + body pose self.qpose_lm  74
+        obs.append(curr_qpos_local[2:])  # current height + local body orientation + body pose self.qpose_lm  74
         if self.kin_cfg.use_vel:
             obs.append(curr_qvel)  # current velocities 75
 
@@ -223,15 +189,13 @@ class HumanoidAREnv(HumanoidEnv):
             obs.append(diff_hrot)  # diff head rotation 4
 
         if self.kin_cfg.use_obj:
-            obs.append(
-                pred_obj_relative_head)  # predicted object relative to head 7
+            obs.append(pred_obj_relative_head)  # predicted object relative to head 7
 
         if self.kin_cfg.use_head:
             obs.append(t_havel)  # target head angular velocity 3
             obs.append(t_hlvel)  # target head linear  velocity 3
             if self.kin_cfg.use_obj:
-                obs.append(
-                    t_obj_relative_head)  # target object relative to head 7
+                obs.append(t_obj_relative_head)  # target object relative to head 7
 
         if self.kin_cfg.use_action and self.ar_model_v > 0:
             obs.append(curr_action)
@@ -265,8 +229,7 @@ class HumanoidAREnv(HumanoidEnv):
             body_pose[body_pose > np.pi] -= 2 * np.pi
             body_pose[body_pose < -np.pi] += 2 * np.pi
 
-        next_qpos = np.concatenate(
-            [curr_pos[:2], a[:(pose_start - 2)], body_pose], axis=0)
+        next_qpos = np.concatenate([curr_pos[:2], a[:(pose_start - 2)], body_pose], axis=0)
         root_qvel = a[qpos_lm:]
         linv = quat_mul_vec(curr_heading, root_qvel[:3])
         next_qpos[:2] += linv[:2] * dt
@@ -290,32 +253,26 @@ class HumanoidAREnv(HumanoidEnv):
         elif self.policy_v == 2:
             next_qpos = a.copy()
 
-        self.target = self.smpl_humanoid.qpos_fk(
-            next_qpos)  # forming target from arnet
+        self.target = self.smpl_humanoid.qpos_fk(next_qpos)  # forming target from arnet
 
         # if flags.debug:
         # next_qpos = self.step_ar(self.ar_context['target'][self.cur_t]) #
         # self.target = self.smpl_humanoid.qpos_fk(self.ar_context['qpos'][self.cur_t + 1]) # GT
         # self.target = self.smpl_humanoid.qpos_fk(self.ar_context['ar_qpos'][self.cur_t + 1]) # Debug
         if self.ar_mode:
-            self.target = self.smpl_humanoid.qpos_fk(
-                self.ar_context['ar_qpos'][self.cur_t + 1])  #
+            self.target = self.smpl_humanoid.qpos_fk(self.ar_context['ar_qpos'][self.cur_t + 1])  #
 
         cc_obs = self.get_cc_obs()
         cc_obs = self.cc_running_state(cc_obs, update=False)
-        mean_action = self.mode == "test" or (self.mode == "train" and
-                                              self.kin_cfg.joint_controller)
-        cc_action = self.cc_policy.select_action(
-            torch.from_numpy(cc_obs)[None, ],
-            mean_action=mean_action)[0].numpy()  # CC step
+        mean_action = self.mode == "test" or (self.mode == "train" and self.kin_cfg.joint_controller)
+        cc_action = self.cc_policy.select_action(torch.from_numpy(cc_obs)[None,], mean_action=mean_action)[0].numpy()  # CC step
 
         if flags.debug:
             # self.do_simulation(cc_a, self.frame_skip)
             # self.data.qpos[:self.qpos_lim] = self.get_target_qpos() # debug
             # self.data.qpos[:self.qpos_lim] = self.ar_context['qpos'][self.cur_t + 1] # debug
             # self.data.qpos[:self.qpos_lim] = self.gt_targets['qpos'][self.cur_t + 1] # debug
-            self.data.qpos[:self.qpos_lim] = self.ar_context['ar_qpos'][
-                self.cur_t + 1]  # ARNet Qpos
+            self.data.qpos[:self.qpos_lim] = self.ar_context['ar_qpos'][self.cur_t + 1]  # ARNet Qpos
             self.sim.forward()  # debug
 
         else:
@@ -355,8 +312,7 @@ class HumanoidAREnv(HumanoidEnv):
         else:
             raise NotImplemented()
 
-        end = (self.cur_t >= cfg.env_episode_len) or (
-            self.cur_t + self.start_ind >= self.ar_context['len'])
+        end = (self.cur_t >= cfg.env_episode_len) or (self.cur_t + self.start_ind >= self.ar_context['len'])
         done = fail or end
         # if done: # ZL: Debug
         #     exit()
@@ -364,23 +320,15 @@ class HumanoidAREnv(HumanoidEnv):
 
         percent = self.cur_t / self.ar_context['len']
         obs = self.get_obs()
-        return obs, reward, done, {
-            'fail': fail,
-            'end': end,
-            "percent": percent,
-            "cc_action": cc_action,
-            "cc_state": cc_obs
-        }
+        return obs, reward, done, {'fail': fail, 'end': end, "percent": percent, "cc_action": cc_action, "cc_state": cc_obs}
 
     def set_mode(self, mode):
         self.mode = mode
 
     def ar_fail_safe(self):
-        self.data.qpos[:self.qpos_lim] = self.ar_context['ar_qpos'][self.cur_t
-                                                                    + 1]
+        self.data.qpos[:self.qpos_lim] = self.ar_context['ar_qpos'][self.cur_t + 1]
         # self.data.qpos[:self.qpos_lim] = self.get_target_qpos()
-        self.data.qvel[:self.qvel_lim] = self.ar_context['ar_qvel'][self.cur_t
-                                                                    + 1]
+        self.data.qvel[:self.qvel_lim] = self.ar_context['ar_qvel'][self.cur_t + 1]
         self.sim.forward()
 
     def reset_model(self):
@@ -429,8 +377,7 @@ class HumanoidAREnv(HumanoidEnv):
         #     init_pose[2] += 1.0
         #     self.set_state(init_pose, self.data.qvel)
 
-        obj_pose = self.convert_obj_qpos(self.ar_context["action_one_hot"][0],
-                                         self.ar_context['obj_pose'][0])
+        obj_pose = self.convert_obj_qpos(self.ar_context["action_one_hot"][0], self.ar_context['obj_pose'][0])
         init_pose = np.concatenate([init_pose_exp, obj_pose])
         init_vel = np.concatenate([init_vel_exp, np.zeros(self.num_obj * 6)])
 
@@ -527,9 +474,7 @@ class HumanoidAREnv(HumanoidEnv):
         obj_start = self.action_index_map[action_idx]
         obj_end = obj_start + self.action_len[action_idx]
 
-        return obj_pose_full[
-            obj_start:
-            obj_end][:7]  # ZL: only support handling one obj right now...
+        return obj_pose_full[obj_start:obj_end][:7]  # ZL: only support handling one obj right now...
 
     def convert_obj_qpos(self, action_one_hot, obj_pose):
         if np.sum(action_one_hot) == 0:

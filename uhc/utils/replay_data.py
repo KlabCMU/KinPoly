@@ -1,5 +1,6 @@
 import os
 import sys
+
 sys.path.append(os.getcwd())
 
 from mujoco_py import load_model_from_path, MjSim
@@ -20,7 +21,6 @@ model_file = f'assets/mujoco_models/{args.model_id}.xml'
 model = load_model_from_path(model_file)
 sim = MjSim(model)
 viewer = MjViewer(sim)
-
 
 
 def key_callback(key, action, mods):
@@ -121,6 +121,3 @@ while not stop:
     viewer.render()
     if not paused:
         t += 1
-
-
-

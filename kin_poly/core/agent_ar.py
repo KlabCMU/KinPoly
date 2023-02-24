@@ -47,6 +47,7 @@ from kin_poly.data_loaders.statear_smpl_dataset import StateARDataset
 from kin_poly.core.trajbatch_ego import TrajBatchEgo
 from kin_poly.core.reward_function import reward_func
 from kin_poly.utils.torch_ext import get_scheduler
+from uhc.utils.tools import CustomUnpickler
 
 
 class AgentAR(AgentPPO):
@@ -324,7 +325,7 @@ class AgentAR(AgentPPO):
                 cp_path = "%s/iter_%04d.p" % (cfg.policy_model_dir, i_iter)
 
             self.logger.info("loading model from checkpoint: %s" % cp_path)
-            model_cp = pickle.load(open(cp_path, "rb"))
+            model_cp = CustomUnpickler(open(cp_path, "rb")).load()
             self.policy_net.load_state_dict(model_cp["policy_dict"])
 
             # policy_net.old_arnet[0].load_state_dict(copy.deepcopy(policy_net.traj_ar_net.state_dict())) # ZL: should use the new old net as well
