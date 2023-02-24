@@ -6,6 +6,13 @@
   <img src="assets/gif/teaser.gif" />
 </div>
 
+## News 🚩
+[February 24, 2023] Updating some model loading; please rerun  `bash download_data.sh` to get the newest models 🙏🏻
+
+[Ocotober 20, 2022] Updating to runnable kinemaitc policy 
+
+[Ocotober 20, 2021] Code release!
+
 ## Introduction
 
 In this project, we demonstrate the ability to estimate 3D human pose and human-object interactions from egocentric videos. This code base contains all the necessary files to train and reproduce the results reported in our paper, and contain configuration files and hyperparameters used in our experiments. Some training data (namely, [AMASS](https://amass.is.tue.mpg.de/)) and external library ([Mujoco](http://www.mujoco.org/)) may require additional licence to obtain, and this codebase contains data processing scripts to process these data once obtained. 
