@@ -19,18 +19,21 @@ import joblib
 import numpy as np
 
 from uhc.khrylib.rl.utils.visualizer import Visualizer
-from uhc.utils.config import Config
+from uhc.utils.config_utils.copycat_config import Config
 from mujoco_py import load_model_from_path, MjSim
 from uhc.khrylib.rl.envs.common.mjviewer import MjViewer
 from uhc.data_loaders.dataset_amass_single import DatasetAMASSSingle
+import uhc as copycat
+from uhc.utils.tools import CustomUnpickler
 
 
 class MyVisulizer(Visualizer):
+
     def __init__(self, vis_file):
         super().__init__(vis_file)
         ngeom = len(env.model.geom_rgba) - 1
 
-        self.env_vis.model.geom_rgba[ngeom + 1 :] = np.array([0.7, 0.0, 0.0, 1])
+        self.env_vis.model.geom_rgba[ngeom + 1:] = np.array([0.7, 0.0, 0.0, 1])
 
         self.env_vis.viewer.cam.lookat[2] = 1.0
         self.env_vis.viewer.cam.azimuth = args.azimuth
@@ -63,11 +66,7 @@ class MyVisulizer(Visualizer):
 
                     # curr_v = value_net(state_var)
                     # print(curr_v)
-                    action = (
-                        policy_net.select_action(state_var, mean_action=True)[0]
-                        .cpu()
-                        .numpy()
-                    )
+                    action = (policy_net.select_action(state_var, mean_action=True)[0].cpu().numpy())
                     next_state, reward, done, res = env.step(action)
 
                     if running_state is not None:
@@ -83,8 +82,8 @@ class MyVisulizer(Visualizer):
                 yield poses
 
     def update_pose(self):
-        self.env_vis.data.qpos[: env.model.nq] = self.data["pred"][self.fr]
-        self.env_vis.data.qpos[env.model.nq :] = self.data["gt"][self.fr]
+        self.env_vis.data.qpos[:env.model.nq] = self.data["pred"][self.fr]
+        self.env_vis.data.qpos[env.model.nq:] = self.data["gt"][self.fr]
 
         # self.env_vis.data.qpos[env.model.nq] += 1.0
         # if args.record_expert:
@@ -106,14 +105,7 @@ class MyVisulizer(Visualizer):
         def vis_gen():
             keys = sorted(list(data_res.keys()))
             # keys = list(data_res.keys())
-            keys = sorted(
-                [
-                    k
-                    for k in list(data_res.keys())
-                    if data_res[k]["percent"] != 1
-                    or ("fail_safe" in data_res[k] and data_res[k]["fail_safe"])
-                ]
-            )
+            keys = sorted([k for k in list(data_res.keys()) if data_res[k]["percent"] != 1 or ("fail_safe" in data_res[k] and data_res[k]["fail_safe"])])
 
             for k in keys:
                 v = data_res[k]
@@ -136,9 +128,7 @@ class MyVisulizer(Visualizer):
                 self.render()
             if not args.preview:
                 t0 = time.time()
-                save_screen_shots(
-                    self.env_vis.viewer.window, f"{frame_dir}/%04d.png" % fr
-                )
+                save_screen_shots(self.env_vis.viewer.window, f"{frame_dir}/%04d.png" % fr)
                 print("%d/%d, %.3f" % (fr, self.num_fr, time.time() - t0))
 
         if not args.preview:
@@ -187,11 +177,7 @@ def run_seq(data_idx):
                 estimated_qpos = env.data.qpos.copy()
                 seq_result["pred"].append(estimated_qpos)
                 state_var = tensor(state, dtype=dtype).unsqueeze(0).clone()
-                action = (
-                    policy_net.select_action(state_var, mean_action=True)[0]
-                    .cpu()
-                    .numpy()
-                )
+                action = (policy_net.select_action(state_var, mean_action=True)[0].cpu().numpy())
                 # values = value_net(state_var)[0].cpu().numpy()
                 # seq_result['values'].append(values)
                 next_state, reward, done, res = env.step(action)
@@ -203,9 +189,7 @@ def run_seq(data_idx):
                     seq_result["percent"] = res["percent"]
                     # pbar.set_description(f"{res['percent']} | {np.mean(seq_result['values']):.3f} | {cur_key}")
                     if args.fail_safe and res["percent"] != 1:
-                        print(
-                            f"Triggering fail safe at timestep {env.cur_t}: {data_loader.curr_key} | {res['percent']:.3f}"
-                        )
+                        print(f"Triggering fail safe at timestep {env.cur_t}: {data_loader.curr_key} | {res['percent']:.3f}")
                         env.fail_safe()
                         seq_result["fail_safe"] = True
                     else:
@@ -227,7 +211,7 @@ def test_coverage():
     data_res_coverage = {}
     num_jobs = args.num_threads
     chunk = np.ceil(len(jobs) / num_jobs).astype(int)
-    jobs = [jobs[i : i + chunk] for i in range(0, len(jobs), chunk)]
+    jobs = [jobs[i:i + chunk] for i in range(0, len(jobs), chunk)]
     job_args = [(jobs[i],) for i in range(len(jobs))]
     print(len(job_args))
     try:
@@ -253,9 +237,7 @@ def test_coverage():
     res_dir = osp.join(cfg.output_dir, f"{args.iter}_{args.data}_coverage.pkl")
     joblib.dump(data_res_coverage, res_dir)
     if not args.no_full:
-        res_full_dir = osp.join(
-            cfg.output_dir, f"{args.iter}_{args.data}_coverage_full.pkl"
-        )
+        res_full_dir = osp.join(cfg.output_dir, f"{args.iter}_{args.data}_coverage_full.pkl")
         joblib.dump(data_res_full, res_full_dir)
 
 
@@ -280,30 +262,22 @@ if __name__ == "__main__":
     parser.add_argument("--no_full", action="store_true", default=False)
 
     args = parser.parse_args()
-    cfg = Config(args.cfg, False, create_dirs=False)
+    cfg = Config(cfg_id=args.cfg, base_dir="", create_dirs=False)
 
     if args.data == "singles" or args.mode == "disp_stats":
-        cfg.data_specs[
-            "test_file_path"
-        ] = "/insert_directory_here/amass_uhc_test_singles.pkl"
+        cfg.data_specs["test_file_path"] = "/insert_directory_here/amass_uhc_test_singles.pkl"
     elif args.data == "all":
-        cfg.data_specs[
-            "test_file_path"
-        ] = "/insert_directory_here/amass_uhc_take4.pkl"
+        cfg.data_specs["test_file_path"] = "/insert_directory_here/amass_uhc_take4.pkl"
     elif args.data == "test":
-        cfg.data_specs[
-            "test_file_path"
-        ] = "/insert_directory_here/amass_uhc_take3_test.pkl"
+        cfg.data_specs["test_file_path"] = "/insert_directory_here/amass_uhc_take3_test.pkl"
     elif args.data == "usr":
         pass
 
     # args.vis_model_file = "humanoid_smpl_neutral_mesh_all_vis"
     # cfg.mujoco_model_file = "humanoid_smpl_neutral_mesh_all.xml"
-
     """environment"""
     data_loader = DatasetAMASSSingle(cfg.data_specs, data_mode="test")
     init_expert = data_loader.sample_seq()
-
     """make and seed env"""
     model = load_model_from_path(f"assets/mujoco_models/{args.vis_model_file}.xml")
     if args.mode != "stats":
@@ -336,7 +310,6 @@ if __name__ == "__main__":
     actuators = env.model.actuator_names
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-
     """load learner policy"""
     if cfg.actor_type == "gauss":
         policy_net = PolicyGaussian(cfg, action_dim=action_dim, state_dim=state_dim)
@@ -347,13 +320,13 @@ if __name__ == "__main__":
     if args.iter != -1:
         cp_path = "%s/iter_%04d.p" % (cfg.model_dir, args.iter)
     else:
-        args.iter = np.max(
-            [int(i.split("_")[-1].split(".")[0]) for i in os.listdir(cfg.model_dir)]
-        )
+        args.iter = np.max([int(i.split("_")[-1].split(".")[0]) for i in os.listdir(cfg.model_dir)])
         cp_path = "%s/iter_%04d.p" % (cfg.model_dir, args.iter)
 
     logger.info("loading model from checkpoint: %s" % cp_path)
-    model_cp = pickle.load(open(cp_path, "rb"))
+
+    model_cp = CustomUnpickler(open(cp_path, "rb")).load()
+
     running_state = model_cp["running_state"]
 
     if args.mode == "stats":

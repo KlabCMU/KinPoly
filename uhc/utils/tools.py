@@ -1,13 +1,28 @@
 from uhc.khrylib.utils import *
 from collections import defaultdict
+import pickle
+
+
+class CustomUnpickler(pickle.Unpickler):
+    # ZL: Patching module name changes
+
+    def find_class(self, module, name):
+        if name == 'ZFilter':
+            from uhc.khrylib.utils.zfilter import ZFilter
+            return ZFilter
+        elif name == 'RunningStat':
+            from uhc.khrylib.utils.zfilter import RunningStat
+            return RunningStat
+
+        return super().find_class(module, name)
+
 
 def get_expert(expert_qpos, expert_meta, env):
     old_state = env.sim.get_state()
     expert = defaultdict(list)
     expert['qpos'] = expert_qpos
     expert['meta'] = expert_meta
-    feat_keys = {'qvel', 'rlinv', 'rlinv_local', 'rangv', 'rq_rmh',
-                 'com', "body_com", 'head_pose', 'ee_pos', 'ee_wpos', 'bquat', 'bangvel', 'wbpos', "wbquat"}
+    feat_keys = {'qvel', 'rlinv', 'rlinv_local', 'rangv', 'rq_rmh', 'com', "body_com", 'head_pose', 'ee_pos', 'ee_wpos', 'bquat', 'bangvel', 'wbpos', "wbquat"}
 
     for i in range(expert_qpos.shape[0]):
         qpos = expert_qpos[i]
@@ -17,13 +32,13 @@ def get_expert(expert_qpos, expert_meta, env):
         ee_pos = env.get_ee_pos(env.cc_cfg.obs_coord)
         wbpos = env.get_wbody_pos()
         wbquat = env.get_wbody_quat()
-        
+
         ee_wpos = env.get_ee_pos(None)
-        bquat = env.get_body_quat() # current pose (body) in quaternion
+        bquat = env.get_body_quat()  # current pose (body) in quaternion
         com = env.get_com()
         head_pose = env.get_head().copy()
         body_com = env.get_body_com()
-        
+
         if i > 0:
             prev_qpos = expert_qpos[i - 1]
             qvel = get_qvel_fd_new(prev_qpos, qpos, env.dt)
@@ -35,7 +50,7 @@ def get_expert(expert_qpos, expert_meta, env):
             expert['rlinv'].append(rlinv)
             expert['rlinv_local'].append(rlinv_local)
             expert['rangv'].append(rangv)
-        
+
         expert['wbquat'].append(wbquat)
         expert['wbpos'].append(wbpos)
         expert['ee_pos'].append(ee_pos)

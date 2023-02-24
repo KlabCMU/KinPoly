@@ -118,16 +118,11 @@ class AgentAR(AgentPPO):
 
     def print_config(self):
         cfg, device, dtype = self.cfg, self.device, self.dtype
-        self.logger.info(
-            "==========================Kin Poly===========================")
-        self.logger.info(
-            f"sampling temp: {cfg.policy_specs.get('sampling_temp', 0.5)}")
-        self.logger.info(
-            f"sampling freq: {cfg.policy_specs.get('sampling_freq', 0.5)}")
-        self.logger.info(
-            f"init_update_iter: {cfg.policy_specs.get('num_init_update', 3)}")
-        self.logger.info(
-            f"step_update_iter: {cfg.policy_specs.get('num_step_update', 10)}")
+        self.logger.info("==========================Kin Poly===========================")
+        self.logger.info(f"sampling temp: {cfg.policy_specs.get('sampling_temp', 0.5)}")
+        self.logger.info(f"sampling freq: {cfg.policy_specs.get('sampling_freq', 0.5)}")
+        self.logger.info(f"init_update_iter: {cfg.policy_specs.get('num_init_update', 3)}")
+        self.logger.info(f"step_update_iter: {cfg.policy_specs.get('num_step_update', 10)}")
         self.logger.info(f"use_of: {cfg.use_of}")
         self.logger.info(f"use_action: {cfg.use_action}")
         self.logger.info(f"use_vel: {cfg.use_vel}")
@@ -135,29 +130,20 @@ class AgentAR(AgentPPO):
         self.logger.info(f"add_noise: {cfg.add_noise}")
         self.logger.info(f"Data file: {cfg.data_file}")
         self.logger.info(f"Feature Version: {cfg.use_of}")
-        self.logger.info(
-            "============================================================")
+        self.logger.info("============================================================")
 
     def setup_policy(self):
         cfg, device, dtype = self.cfg, self.device, self.dtype
         data_sample = self.data_loader.sample_seq()
-        data_sample = {
-            k: v.to(device).clone().type(dtype)
-            for k, v in data_sample.items()
-        }
-        self.policy_net = policy_net = PolicyAR(cfg,
-                                                data_sample,
-                                                device=device,
-                                                dtype=dtype,
-                                                ar_iter=cfg.ar_iter)
+        data_sample = {k: v.to(device).clone().type(dtype) for k, v in data_sample.items()}
+        self.policy_net = policy_net = PolicyAR(cfg, data_sample, device=device, dtype=dtype, ar_iter=cfg.ar_iter)
         to_device(device, self.policy_net)
 
     def setup_value(self):
         cfg, device, dtype = self.cfg, self.device, self.dtype
         state_dim = self.policy_net.state_dim
         action_dim = self.env.action_space.shape[0]
-        self.value_net = Value(
-            MLP(state_dim, self.cc_cfg.value_hsize, self.cc_cfg.value_htype))
+        self.value_net = Value(MLP(state_dim, self.cc_cfg.value_hsize, self.cc_cfg.value_htype))
         to_device(device, self.value_net)
 
     def setup_env(self):
@@ -182,16 +168,9 @@ class AgentAR(AgentPPO):
 
         with torch.no_grad():
             data_sample = self.data_loader.sample_seq()
-            data_sample = {
-                k: v.to(device).clone().type(dtype)
-                for k, v in data_sample.items()
-            }
+            data_sample = {k: v.to(device).clone().type(dtype) for k, v in data_sample.items()}
             context_sample = self.policy_net.init_context(data_sample)
-        self.env = HumanoidAREnv(cfg,
-                                 cc_cfg=cc_cfg,
-                                 init_context=context_sample,
-                                 mode="train",
-                                 wild=cfg.wild)
+        self.env = HumanoidAREnv(cfg, cc_cfg=cc_cfg, init_context=context_sample, mode="train", wild=cfg.wild)
         self.env.seed(cfg.seed)
         self.env_wild = HumanoidAREnv(
             cfg,
@@ -250,10 +229,7 @@ class AgentAR(AgentPPO):
         cfg, device, dtype = self.cfg, self.device, self.dtype
         freq_path = osp.join(cfg.result_dir, "freq_dict.pt")
         try:
-            self.freq_dict = ({
-                k: []
-                for k in self.data_loader.takes
-            } if not osp.exists(freq_path) else joblib.load(freq_path))
+            self.freq_dict = ({k: [] for k in self.data_loader.takes} if not osp.exists(freq_path) else joblib.load(freq_path))
         except:
             print("error parsing freq_dict, using empty one")
             self.freq_dict = {k: [] for k in self.data_loader.takes}
@@ -261,8 +237,7 @@ class AgentAR(AgentPPO):
 
     def setup_reward(self):
         cfg, device, dtype = self.cfg, self.device, self.dtype
-        self.expert_reward = expert_reward = reward_func[
-            cfg.policy_specs["reward_id"]]
+        self.expert_reward = expert_reward = reward_func[cfg.policy_specs["reward_id"]]
 
     def log_train(self, info):
         """logging"""
@@ -300,9 +275,7 @@ class AgentAR(AgentPPO):
         batch, log = self.sample(cfg.policy_specs["min_batch_size"])
 
         if cfg.policy_specs["end_reward"]:
-            self.env.end_reward = (log.avg_c_reward *
-                                   cfg.policy_specs["gamma"] /
-                                   (1 - cfg.policy_specs["gamma"]))
+            self.env.end_reward = (log.avg_c_reward * cfg.policy_specs["gamma"] / (1 - cfg.policy_specs["gamma"]))
         """update networks"""
         t1 = time.time()
         self.update_params(batch)
@@ -325,9 +298,7 @@ class AgentAR(AgentPPO):
     def setup_data_loader(self):
         cfg, device, dtype = self.cfg, self.device, self.dtype
         self.test_data_loaders = []
-        self.data_loader = data_loader = StateARDataset(cfg,
-                                                        cfg.data,
-                                                        sim=True)
+        self.data_loader = data_loader = StateARDataset(cfg, cfg.data, sim=True)
         self.test_data_loaders.append(StateARDataset(cfg, "test"))
 
         from kin_poly.utils.statear_smpl_config import Config
@@ -337,8 +308,7 @@ class AgentAR(AgentPPO):
             cfg.id,
             wild=True,
             create_dirs=False,
-            mujoco_path=
-            "/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml",
+            mujoco_path="/hdd/zen/dev/copycat/Copycat/assets/mujoco_models/%s.xml",
         )
         self.test_data_loaders.append(StateARDataset(cfg_wild, "test"))
 
@@ -346,8 +316,7 @@ class AgentAR(AgentPPO):
         cfg, device, dtype = self.cfg, self.device, self.dtype
         if i_iter > 0:
             if self.wild:
-                cp_path = "%s/iter_wild_%04d.p" % (cfg.policy_model_dir,
-                                                   i_iter)
+                cp_path = "%s/iter_wild_%04d.p" % (cfg.policy_model_dir, i_iter)
             else:
                 cp_path = "%s/iter_%04d.p" % (cfg.policy_model_dir, i_iter)
 
@@ -378,8 +347,7 @@ class AgentAR(AgentPPO):
         )
         with to_cpu(policy_net, value_net):
             if self.wild:
-                cp_path = "%s/iter_wild_%04d.p" % (cfg.policy_model_dir,
-                                                   i_iter + 1)
+                cp_path = "%s/iter_wild_%04d.p" % (cfg.policy_model_dir, i_iter + 1)
             else:
                 cp_path = "%s/iter_%04d.p" % (cfg.policy_model_dir, i_iter + 1)
 
@@ -445,8 +413,7 @@ class AgentAR(AgentPPO):
                     queue = multiprocessing.Queue()
                     for i in range(len(jobs) - 1):
                         worker_args = (jobs[i + 1], data_loader, queue)
-                        worker = multiprocessing.Process(target=self.eval_seqs,
-                                                         args=worker_args)
+                        worker = multiprocessing.Process(target=self.eval_seqs, args=worker_args)
                         worker.start()
                     res = self.eval_seqs(jobs[0], data_loader, None)
                     data_res_coverage.update(res)
@@ -459,38 +426,23 @@ class AgentAR(AgentPPO):
                 if res["percent"] == 1:
                     coverage += 1
                     if data_mode == "train":
-                        [
-                            self.freq_dict[data_loader.takes[k]].append(
-                                [res["percent"], 0]) for _ in range(1)
-                        ]
+                        [self.freq_dict[data_loader.takes[k]].append([res["percent"], 0]) for _ in range(1)]
                 else:
                     if data_mode == "train":
-                        [
-                            self.freq_dict[data_loader.takes[k]].append(
-                                [res["percent"], 0]) for _ in range(3)
-                        ]
+                        [self.freq_dict[data_loader.takes[k]].append([res["percent"], 0]) for _ in range(3)]
 
             eval_path = osp.join(cfg.result_dir, f"eval_dict_{data_mode}.pt")
-            eval_dict = (joblib.load(eval_path)
-                         if osp.exists(eval_path) else defaultdict(list))
-            eval_dict[self.epoch] = {
-                data_loader.takes[k]: v["percent"]
-                for k, v in data_res_coverage.items()
-            }
+            eval_dict = (joblib.load(eval_path) if osp.exists(eval_path) else defaultdict(list))
+            eval_dict[self.epoch] = {data_loader.takes[k]: v["percent"] for k, v in data_res_coverage.items()}
             joblib.dump(eval_dict, eval_path)
-            self.logger.info(
-                f"Coverage {data_mode} of {coverage} out of {data_loader.get_len()}"
-            )
+            self.logger.info(f"Coverage {data_mode} of {coverage} out of {data_loader.get_len()}")
 
-            res_bool = np.array(
-                [res["percent"] == 1 for k, res in data_res_coverage.items()])
-            res_dicts.append({
-                f"coverage_{data_loader.name}": {
-                    "mean_coverage": np.mean(res_bool),
-                    "num_coverage": np.sum(res_bool),
-                    "all_coverage": len(res_bool),
-                }
-            })
+            res_bool = np.array([res["percent"] == 1 for k, res in data_res_coverage.items()])
+            res_dicts.append({f"coverage_{data_loader.name}": {
+                "mean_coverage": np.mean(res_bool),
+                "num_coverage": np.sum(res_bool),
+                "all_coverage": len(res_bool),
+            }})
 
         return res_dicts
 
@@ -515,8 +467,7 @@ class AgentAR(AgentPPO):
                 self.policy_net.set_mode("test")
                 curr_env.set_mode("test")
 
-                context_sample = loader.get_seq_by_ind(fit_ind,
-                                                       full_sample=True)
+                context_sample = loader.get_seq_by_ind(fit_ind, full_sample=True)
                 ar_context = self.policy_net.init_context(context_sample)
 
                 curr_env.load_context(ar_context)
@@ -532,10 +483,8 @@ class AgentAR(AgentPPO):
                     state_var = tensor(state).unsqueeze(0)
                     trans_out = self.trans_policy(state_var)
 
-                    action = self.policy_net.select_action(
-                        trans_out, mean_action=True)[0].numpy()
-                    action = (int(action) if self.policy_net.type == "discrete"
-                              else action.astype(np.float64))
+                    action = self.policy_net.select_action(trans_out, mean_action=True)[0].numpy()
+                    action = (int(action) if self.policy_net.type == "discrete" else action.astype(np.float64))
                     next_state, env_reward, done, info = curr_env.step(action)
 
                     # c_reward, c_info = self.custom_reward(curr_env, state, action, info)
@@ -579,8 +528,7 @@ class AgentAR(AgentPPO):
             # context_sample = self.data_loader.sample_seq()
 
             # should not try to fix the height during training!!!
-            ar_context = self.policy_net.init_context(context_sample,
-                                                      fix_height=False)
+            ar_context = self.policy_net.init_context(context_sample, fix_height=False)
 
             self.env.load_context(ar_context)
             state = self.env.reset()
@@ -593,14 +541,11 @@ class AgentAR(AgentPPO):
             for t in range(10000):
                 state_var = tensor(state).unsqueeze(0)
                 trans_out = self.trans_policy(state_var)
-                mean_action = self.mean_action or (self.cfg.policy_specs.get(
-                    "dagger", False) and self.epoch % 2 == 0)
+                mean_action = self.mean_action or (self.cfg.policy_specs.get("dagger", False) and self.epoch % 2 == 0)
 
-                action = self.policy_net.select_action(trans_out,
-                                                       mean_action)[0].numpy()
+                action = self.policy_net.select_action(trans_out, mean_action)[0].numpy()
 
-                action = (int(action) if self.policy_net.type == "discrete"
-                          else action.astype(np.float64))
+                action = (int(action) if self.policy_net.type == "discrete" else action.astype(np.float64))
                 #################### ZL: Jank Code.... ####################
                 gt_qpos = self.env.ar_context["qpos"][self.env.cur_t + 1]
                 curr_qpos = self.env.get_humanoid_qpos()
@@ -613,8 +558,7 @@ class AgentAR(AgentPPO):
                     next_state = self.running_state(next_state)
                 # use custom or env reward
                 if self.custom_reward is not None:
-                    c_reward, c_info = self.custom_reward(
-                        self.env, state, action, info)
+                    c_reward, c_info = self.custom_reward(self.env, state, action, info)
                     reward = c_reward
                 else:
                     c_reward, c_info = 0.0, np.array([0.0])
@@ -651,8 +595,7 @@ class AgentAR(AgentPPO):
                 if pid == 0 and self.render:
                     self.env.render()
                 if done:
-                    freq_dict[self.data_loader.curr_key].append(
-                        [info["percent"], self.data_loader.fr_start])
+                    freq_dict[self.data_loader.curr_key].append([info["percent"], self.data_loader.fr_start])
                     # print(self.data_loader.curr_key, info['percent'])
                     break
 
@@ -709,37 +652,25 @@ class AgentAR(AgentPPO):
         self.pre_sample()
         with to_cpu(*self.sample_modules):
             with torch.no_grad():
-                thread_batch_size = int(
-                    math.floor(min_batch_size / self.num_threads))
+                thread_batch_size = int(math.floor(min_batch_size / self.num_threads))
                 queue = multiprocessing.Queue()
                 memories = [None] * self.num_threads
                 loggers = [None] * self.num_threads
                 for i in range(self.num_threads - 1):
                     worker_args = (i + 1, queue, thread_batch_size)
-                    worker = multiprocessing.Process(target=self.sample_worker,
-                                                     args=worker_args)
+                    worker = multiprocessing.Process(target=self.sample_worker, args=worker_args)
                     worker.start()
-                memories[0], loggers[0], freq_dict = self.sample_worker(
-                    0, None, thread_batch_size)
-                self.freq_dict = {
-                    k: v + freq_dict[k]
-                    for k, v in self.freq_dict.items()
-                }
+                memories[0], loggers[0], freq_dict = self.sample_worker(0, None, thread_batch_size)
+                self.freq_dict = {k: v + freq_dict[k] for k, v in self.freq_dict.items()}
 
                 for i in range(self.num_threads - 1):
                     pid, worker_memory, worker_logger, freq_dict = queue.get()
                     memories[pid] = worker_memory
                     loggers[pid] = worker_logger
 
-                    self.freq_dict = {
-                        k: v + freq_dict[k]
-                        for k, v in self.freq_dict.items()
-                    }
+                    self.freq_dict = {k: v + freq_dict[k] for k, v in self.freq_dict.items()}
 
-                self.freq_dict = {
-                    k: v if len(v) < 5000 else v[-5000:]
-                    for k, v in self.freq_dict.items()
-                }
+                self.freq_dict = {k: v if len(v) < 5000 else v[-5000:] for k, v in self.freq_dict.items()}
                 # print(np.sum([len(v) for k, v in self.freq_dict.items()]), np.mean(np.concatenate([self.freq_dict[k] for k in self.freq_dict.keys()])))
                 traj_batch = TrajBatchEgo(memories)
                 logger = self.logger_cls.merge(loggers)
@@ -751,41 +682,29 @@ class AgentAR(AgentPPO):
         t0 = time.time()
         to_train(*self.update_modules)
         states = torch.from_numpy(batch.states).to(self.dtype).to(self.device)
-        actions = torch.from_numpy(batch.actions).to(self.dtype).to(
-            self.device)
-        rewards = torch.from_numpy(batch.rewards).to(self.dtype).to(
-            self.device)
+        actions = torch.from_numpy(batch.actions).to(self.dtype).to(self.device)
+        rewards = torch.from_numpy(batch.rewards).to(self.dtype).to(self.device)
         masks = torch.from_numpy(batch.masks).to(self.dtype).to(self.device)
         exps = torch.from_numpy(batch.exps).to(self.dtype).to(self.device)
-        v_metas = torch.from_numpy(batch.v_metas).to(self.dtype).to(
-            self.device)
-        gt_target_qpos = (torch.from_numpy(batch.gt_target_qpos).to(
-            self.dtype).to(self.device))
-        curr_qpos = torch.from_numpy(batch.curr_qpos).to(self.dtype).to(
-            self.device)
-        res_qpos = torch.from_numpy(batch.res_qpos).to(self.dtype).to(
-            self.device)
-        cc_actions = torch.from_numpy(batch.cc_action).to(self.dtype).to(
-            self.device)
-        cc_states = torch.from_numpy(batch.cc_state).to(self.dtype).to(
-            self.device)
+        v_metas = torch.from_numpy(batch.v_metas).to(self.dtype).to(self.device)
+        gt_target_qpos = (torch.from_numpy(batch.gt_target_qpos).to(self.dtype).to(self.device))
+        curr_qpos = torch.from_numpy(batch.curr_qpos).to(self.dtype).to(self.device)
+        res_qpos = torch.from_numpy(batch.res_qpos).to(self.dtype).to(self.device)
+        cc_actions = torch.from_numpy(batch.cc_action).to(self.dtype).to(self.device)
+        cc_states = torch.from_numpy(batch.cc_state).to(self.dtype).to(self.device)
 
         with to_test(*self.update_modules):
             with torch.no_grad():
-                values = self.value_net(
-                    self.trans_value(states[:, :self.policy_net.state_dim]))
+                values = self.value_net(self.trans_value(states[:, :self.policy_net.state_dim]))
 
         self.policy_net.set_mode("train")
         self.policy_net.initialize_rnn((masks, v_metas))
         """get advantage estimation from the trajectories"""
-        print(
-            f"==========================Epoch: {self.epoch}=======================>"
-        )
+        print(f"==========================Epoch: {self.epoch}=======================>")
 
         if not self.cfg.policy_specs.get("grad_joint", False):
             if self.cfg.policy_specs.get("rl_update", False):
-                advantages, returns = estimate_advantages(
-                    rewards, masks, values, self.gamma, self.tau)
+                advantages, returns = estimate_advantages(rewards, masks, values, self.gamma, self.tau)
                 self.update_policy(states, actions, returns, advantages, exps)
 
             if self.cfg.policy_specs.get("init_update", False):
@@ -794,8 +713,7 @@ class AgentAR(AgentPPO):
                     self.data_loader,
                     device=self.device,
                     dtype=self.dtype,
-                    num_epoch=int(
-                        self.cfg.policy_specs.get("num_init_update", 5)),
+                    num_epoch=int(self.cfg.policy_specs.get("num_init_update", 5)),
                 )
 
             if self.cfg.policy_specs.get("step_update", False):
@@ -803,8 +721,7 @@ class AgentAR(AgentPPO):
                     states,
                     gt_target_qpos,
                     curr_qpos,
-                    num_epoch=int(
-                        self.cfg.policy_specs.get("num_step_update", 10)),
+                    num_epoch=int(self.cfg.policy_specs.get("num_step_update", 10)),
                 )
 
             if self.cfg.policy_specs.get("step_update_dyna", False):
@@ -812,8 +729,7 @@ class AgentAR(AgentPPO):
                     states,
                     res_qpos,
                     curr_qpos,
-                    num_epoch=int(
-                        self.cfg.policy_specs.get("num_step_dyna_update", 10)),
+                    num_epoch=int(self.cfg.policy_specs.get("num_step_dyna_update", 10)),
                 )
 
             if self.cfg.policy_specs.get("full_update", False):
@@ -826,14 +742,11 @@ class AgentAR(AgentPPO):
                     scheduled_sampling=0.3,
                 )
         else:
-            advantages, returns = estimate_advantages(rewards, masks, values,
-                                                      self.gamma, self.tau)
-            self.update_policy_joint(states, gt_target_qpos, curr_qpos,
-                                     actions, returns, advantages, exps)
+            advantages, returns = estimate_advantages(rewards, masks, values, self.gamma, self.tau)
+            self.update_policy_joint(states, gt_target_qpos, curr_qpos, actions, returns, advantages, exps)
 
         if self.cfg.joint_controller:
-            self.update_controller(cc_states, cc_actions, returns, advantages,
-                                   exps)
+            self.update_controller(cc_states, cc_actions, returns, advantages, exps)
 
         self.policy_net.step_lr()
 
@@ -843,24 +756,19 @@ class AgentAR(AgentPPO):
         """update policy"""
         with to_test(*self.update_modules):
             with torch.no_grad():
-                fixed_log_probs = self.policy_net.get_log_prob(
-                    self.trans_policy(states), actions)
+                fixed_log_probs = self.policy_net.get_log_prob(self.trans_policy(states), actions)
         pbar = tqdm(range(self.opt_num_epochs))
         for _ in pbar:
             ind = exps.nonzero(as_tuple=False).squeeze(1)
             self.update_value(states, returns)
-            dist, action_mean, action_std = self.policy_net.forward(
-                self.trans_policy(states)[ind])
+            dist, action_mean, action_std = self.policy_net.forward(self.trans_policy(states)[ind])
             log_probs = dist.log_prob(actions[ind])
-            surr_loss, ratio = self.ppo_loss(log_probs, advantages,
-                                             fixed_log_probs, ind)
+            surr_loss, ratio = self.ppo_loss(log_probs, advantages, fixed_log_probs, ind)
             self.optimizer_policy.zero_grad()
             surr_loss.backward()
             self.clip_policy_grad()
             self.optimizer_policy.step()
-            pbar.set_description_str(
-                f"PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ration: {ratio.mean().cpu().detach().numpy():.3f}"
-            )
+            pbar.set_description_str(f"PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ration: {ratio.mean().cpu().detach().numpy():.3f}")
 
     def update_controller(self, states, actions, returns, advantages, exps):
         """update policy"""
@@ -868,26 +776,21 @@ class AgentAR(AgentPPO):
             to_device(self.device, self.env.cc_policy)
         with to_test(*self.update_modules):
             with torch.no_grad():
-                fixed_log_probs = self.env.cc_policy.get_log_prob(
-                    self.trans_policy(states), actions)
+                fixed_log_probs = self.env.cc_policy.get_log_prob(self.trans_policy(states), actions)
         pbar = tqdm(range(self.opt_num_epochs))
         for _ in pbar:
             ind = exps.nonzero(as_tuple=False).squeeze(1)
             # self.update_value(states, returns)
             dist = self.env.cc_policy.forward(self.trans_policy(states)[ind])
             log_probs = dist.log_prob(actions[ind])
-            surr_loss, ratio = self.ppo_loss(log_probs, advantages,
-                                             fixed_log_probs, ind)
+            surr_loss, ratio = self.ppo_loss(log_probs, advantages, fixed_log_probs, ind)
             self.optimizer_policy.zero_grad()
             surr_loss.backward()
             self.clip_policy_grad()
             self.optimizer_policy.step()
-            pbar.set_description_str(
-                f"PPO Loss-controller: {surr_loss.cpu().detach().numpy():.3f}| Ration: {ratio.mean().cpu().detach().numpy():.3f}"
-            )
+            pbar.set_description_str(f"PPO Loss-controller: {surr_loss.cpu().detach().numpy():.3f}| Ration: {ratio.mean().cpu().detach().numpy():.3f}")
 
-    def update_policy_joint(self, states, target_qpos, curr_qpos, actions,
-                            returns, advantages, exps):
+    def update_policy_joint(self, states, target_qpos, curr_qpos, actions, returns, advantages, exps):
         """update policy"""
         # This is seperate
         if self.cfg.policy_specs.get("init_update", False):
@@ -901,74 +804,55 @@ class AgentAR(AgentPPO):
 
         with to_test(*self.update_modules):
             with torch.no_grad():
-                fixed_log_probs = self.policy_net.get_log_prob(
-                    self.trans_policy(states), actions)
+                fixed_log_probs = self.policy_net.get_log_prob(self.trans_policy(states), actions)
         pbar = tqdm(range(self.opt_num_epochs))
         for _ in pbar:
             ind = exps.nonzero(as_tuple=False).squeeze(1)
             self.update_value(states, returns)
-            dist, action_mean, action_std = self.policy_net.forward(
-                self.trans_policy(states)[ind])
+            dist, action_mean, action_std = self.policy_net.forward(self.trans_policy(states)[ind])
             log_probs = dist.log_prob(actions[ind])
             if self.cfg.policy_specs.get("grad_alternate", False):
                 if self.epoch % 2 == 1:
-                    surr_loss, ratio = self.ppo_loss(log_probs, advantages,
-                                                     fixed_log_probs, ind)
+                    surr_loss, ratio = self.ppo_loss(log_probs, advantages, fixed_log_probs, ind)
                     self.optimizer_policy.zero_grad()
                     surr_loss.backward()
                     self.clip_policy_grad()
                     self.optimizer_policy.step()
-                    pbar.set_description_str(
-                        f"PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ration: {ratio.mean().cpu().detach().numpy():.3f}"
-                    )
+                    pbar.set_description_str(f"PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ration: {ratio.mean().cpu().detach().numpy():.3f}")
 
                 if self.epoch % 2 == 0:
                     self.policy_net.traj_ar_net.set_sim(curr_qpos)
-                    next_qpos, _ = self.policy_net.traj_ar_net.step(
-                        action_mean)
-                    loss, loss_idv = self.policy_net.traj_ar_net.compute_loss_lite(
-                        next_qpos, target_qpos)
+                    next_qpos, _ = self.policy_net.traj_ar_net.step(action_mean)
+                    loss, loss_idv = self.policy_net.traj_ar_net.compute_loss_lite(next_qpos, target_qpos)
                     self.policy_net.optimizer.zero_grad()
                     loss.backward()
                     self.policy_net.optimizer.step()
-                    pbar.set_description_str(
-                        f"Per-step {self.epoch} loss: {loss.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}] lr: {self.policy_net.scheduler.get_lr()[0]:.5f}"
-                    )
+                    pbar.set_description_str(f"Per-step {self.epoch} loss: {loss.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}] lr: {self.policy_net.scheduler.get_lr()[0]:.5f}")
             else:
-                surr_loss, ratio = self.ppo_loss(log_probs, advantages,
-                                                 fixed_log_probs, ind)
+                surr_loss, ratio = self.ppo_loss(log_probs, advantages, fixed_log_probs, ind)
                 self.policy_net.traj_ar_net.set_sim(curr_qpos)
                 if self.cfg.policy_specs.get("sl_ratio", False):
                     # This ratio is a bit problemtic. Well it's wrong.
-                    next_qpos, _ = self.policy_net.traj_ar_net.step(
-                        actions[ind])
-                    loss_step, loss_idv = self.policy_net.traj_ar_net.compute_loss_lite(
-                        next_qpos, target_qpos,
-                        return_mean=False)  ## BC loss, directly applied
+                    next_qpos, _ = self.policy_net.traj_ar_net.step(actions[ind])
+                    loss_step, loss_idv = self.policy_net.traj_ar_net.compute_loss_lite(next_qpos, target_qpos, return_mean=False)  ## BC loss, directly applied
                     loss_step = (ratio * loss_step).mean()
                 else:
-                    next_qpos, _ = self.policy_net.traj_ar_net.step(
-                        action_mean)
-                    loss_step, loss_idv = self.policy_net.traj_ar_net.compute_loss_lite(
-                        next_qpos, target_qpos)
+                    next_qpos, _ = self.policy_net.traj_ar_net.step(action_mean)
+                    loss_step, loss_idv = self.policy_net.traj_ar_net.compute_loss_lite(next_qpos, target_qpos)
                 loss = loss_step * 10 + surr_loss
 
                 self.optimizer_policy.zero_grad()
                 loss.backward()
                 self.clip_policy_grad()
                 self.optimizer_policy.step()
-                pbar.set_description_str(
-                    f"Per-step {self.epoch} loss: {loss_step.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}]"
-                    +
-                    f" | PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ratio: {ratio.mean().cpu().detach().numpy():.3f} | lr: {self.scheduler_policy.get_lr()[0]:.5f}"
-                )
+                pbar.set_description_str(f"Per-step {self.epoch} loss: {loss_step.cpu().detach().numpy():.3f} [{' '.join([str(f'{i * 1000:.3f}') for i in loss_idv])}]" +
+                                         f" | PPO Loss: {surr_loss.cpu().detach().numpy():.3f}| Ratio: {ratio.mean().cpu().detach().numpy():.3f} | lr: {self.scheduler_policy.get_lr()[0]:.5f}")
 
     def ppo_loss(self, log_probs, advantages, fixed_log_probs, ind):
         ratio = torch.exp(log_probs - fixed_log_probs[ind])
         advantages = advantages[ind]
         surr1 = ratio * advantages
-        surr2 = (torch.clamp(ratio, 1.0 - self.clip_epsilon,
-                             1.0 + self.clip_epsilon) * advantages)
+        surr2 = (torch.clamp(ratio, 1.0 - self.clip_epsilon, 1.0 + self.clip_epsilon) * advantages)
         surr_loss = -torch.min(surr1, surr2).mean()
         return surr_loss, ratio
 

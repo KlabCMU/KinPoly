@@ -19,3 +19,5 @@ autograd
 sklearn
 chumpy
 patchelf
+chardet
+pyopengl
